@@ -1,0 +1,14 @@
+{
+    "compilerOptions": {
+        "target": "es5",
+        "module": "esnext",
+        "moduleResolution": "node",
+        "outDir": "dist/esm",
+        "allowJs": true
+    },
+    "include": [
+        "node_modules/indexeddbshim/src"
+    ],
+    "exclude": [
+    ]
+}
