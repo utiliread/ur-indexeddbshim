@@ -13,16 +13,24 @@ function IDBVersionChangeEvent(type /* , eventInitDict */) {
 IDBVersionChangeEvent.prototype = Object.create(ShimEvent.prototype);
 IDBVersionChangeEvent.prototype[Symbol.toStringTag] = 'IDBVersionChangeEventPrototype';
 readonlyProperties.forEach(function (prop) {
-    Object.defineProperty(IDBVersionChangeEvent.prototype, prop, {
-        enumerable: true,
-        configurable: true,
-        get: function () {
-            if (!(this instanceof IDBVersionChangeEvent)) {
-                throw new TypeError('Illegal invocation');
-            }
-            return (this.__eventInitDict && this.__eventInitDict[prop]) || (prop === 'oldVersion' ? 0 : null);
-        }
-    });
+    var _a;
+    // Ensure for proper interface testing that "get <name>" is the function name
+    var o = (_a = {},
+        Object.defineProperty(_a, prop, {
+            get: function () {
+                if (!(this instanceof IDBVersionChangeEvent)) {
+                    throw new TypeError('Illegal invocation');
+                }
+                return (this.__eventInitDict && this.__eventInitDict[prop]) || (prop === 'oldVersion' ? 0 : null);
+            },
+            enumerable: true,
+            configurable: true
+        }),
+        _a);
+    var desc = Object.getOwnPropertyDescriptor(o, prop);
+    // desc.enumerable = true; // Default
+    // desc.configurable = true; // Default
+    Object.defineProperty(IDBVersionChangeEvent.prototype, prop, desc);
 });
 Object.defineProperty(IDBVersionChangeEvent, Symbol.hasInstance, {
     value: function (obj) { return util.isObj(obj) && 'oldVersion' in obj && typeof obj.defaultPrevented === 'boolean'; }

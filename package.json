@@ -7,9 +7,9 @@
     "build": "tsc && tsc -p tsconfig.cjs.json && rimraf dist/cjs/**/*.d.ts"
   },
   "dependencies": {
-    "indexeddbshim": "^3.10.0"
+    "indexeddbshim": "^4.1.0"
   },
   "devDependencies": {
-    "typescript": "^3.1.6"
+    "typescript": "^3.2.4"
   }
 }

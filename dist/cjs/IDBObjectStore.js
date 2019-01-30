@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+var sync_promise_1 = require("sync-promise");
 var DOMException_1 = require("./DOMException");
 var IDBCursor_1 = require("./IDBCursor");
 var IDBKeyRange_1 = require("./IDBKeyRange");
@@ -10,14 +11,13 @@ var IDBIndex_1 = require("./IDBIndex");
 var IDBTransaction_1 = require("./IDBTransaction");
 var Sca = require("./Sca");
 var CFG_1 = require("./CFG");
-var sync_promise_1 = require("sync-promise");
 var readonlyProperties = ['keyPath', 'indexNames', 'transaction', 'autoIncrement'];
 /**
  * IndexedDB Object Store
  * http://dvcs.w3.org/hg/IndexedDB/raw-file/tip/Overview.html#idl-def-IDBObjectStore
  * @param {IDBObjectStoreProperties} storeProperties
  * @param {IDBTransaction} transaction
- * @constructor
+ * @class
  */
 function IDBObjectStore() {
     throw new TypeError('Illegal constructor');
@@ -34,13 +34,13 @@ IDBObjectStore.__createInstance = function (storeProperties, transaction) {
         me.__idbdb = storeProperties.idbdb;
         me.__cursors = storeProperties.cursors || [];
         // autoInc is numeric (0/1) on WinPhone
-        me.__autoIncrement = !!storeProperties.autoInc;
+        me.__autoIncrement = Boolean(storeProperties.autoInc);
         me.__indexes = {};
         me.__indexHandles = {};
         me.__indexNames = DOMStringList_1.default.__createInstance();
         var indexList = storeProperties.indexList;
         for (var indexName in indexList) {
-            if (indexList.hasOwnProperty(indexName)) {
+            if (util.hasOwn(indexList, indexName)) {
                 var index = IDBIndex_1.IDBIndex.__createInstance(me, indexList[indexName]);
                 me.__indexes[index.name] = index;
                 if (!index.__deleted) {
@@ -391,7 +391,7 @@ IDBObjectStore.prototype.__insertData = function (tx, encoded, value, clonedKeyO
             }
         });
     });
-    sync_promise_1.default.all(indexPromises).then(function () {
+    return sync_promise_1.default.all(indexPromises).then(function () {
         var sqlStart = ['INSERT INTO', util.escapeStoreNameForSQL(me.__currentName), '('];
         var sqlEnd = [' VALUES ('];
         var insertSqlValues = [];
@@ -401,11 +401,12 @@ IDBObjectStore.prototype.__insertData = function (tx, encoded, value, clonedKeyO
             sqlEnd.push('?,');
             insertSqlValues.push(util.escapeSQLiteStatement(Key.encode(clonedKeyOrCurrentNumber)));
         }
-        for (var key in paramMap) {
+        Object.entries(paramMap).forEach(function (_a) {
+            var key = _a[0], stmt = _a[1];
             sqlStart.push(util.escapeIndexNameForSQL(key) + ',');
             sqlEnd.push('?,');
-            insertSqlValues.push(util.escapeSQLiteStatement(paramMap[key]));
-        }
+            insertSqlValues.push(util.escapeSQLiteStatement(stmt));
+        });
         // removing the trailing comma
         sqlStart.push(util.sqlQuote('value') + ' )');
         sqlEnd.push('?)');
@@ -418,6 +419,7 @@ IDBObjectStore.prototype.__insertData = function (tx, encoded, value, clonedKeyO
             // Should occur for `add` operation
             error(DOMException_1.createDOMException('ConstraintError', err.message, err));
         });
+        return undefined;
     }).catch(function (err) {
         function fail() {
             // Todo: Add a different error object here if `assignCurrentNumber` fails in reverting?
@@ -538,7 +540,13 @@ IDBObjectStore.prototype.__get = function (query, getKey, getAll, count) {
             try {
                 // Opera can't deal with the try-catch here.
                 if (data.rows.length === 0) {
-                    return getAll ? success([]) : success();
+                    if (getAll) {
+                        success([]);
+                    }
+                    else {
+                        success();
+                    }
+                    return;
                 }
                 ret = [];
                 if (getKey) {
@@ -586,7 +594,7 @@ IDBObjectStore.prototype.getAllKeys = function ( /* query, count */) {
     var query = arguments[0], count = arguments[1];
     return this.__get(query, true, true, count);
 };
-IDBObjectStore.prototype['delete'] = function (query) {
+IDBObjectStore.prototype.delete = function (query) {
     var me = this;
     if (!(this instanceof IDBObjectStore)) {
         throw new TypeError('Illegal invocation');
@@ -728,8 +736,8 @@ IDBObjectStore.prototype.createIndex = function (indexName, keyPath /* , optiona
         columnName: indexName,
         keyPath: keyPath,
         optionalParams: {
-            unique: !!optionalParameters.unique,
-            multiEntry: !!optionalParameters.multiEntry
+            unique: Boolean(optionalParameters.unique),
+            multiEntry: Boolean(optionalParameters.multiEntry)
         }
     };
     var index = IDBIndex_1.IDBIndex.__createInstance(me, indexProperties);
@@ -753,25 +761,8 @@ IDBObjectStore.prototype.deleteIndex = function (name) {
     }
     IDBIndex_1.IDBIndex.__deleteIndex(me, index);
 };
-readonlyProperties.forEach(function (prop) {
-    Object.defineProperty(IDBObjectStore.prototype, prop, {
-        enumerable: true,
-        configurable: true,
-        get: function () {
-            throw new TypeError('Illegal invocation');
-        }
-    });
-});
-Object.defineProperty(IDBObjectStore.prototype, 'name', {
-    enumerable: true,
-    configurable: true,
-    get: function () {
-        throw new TypeError('Illegal invocation');
-    },
-    set: function (val) {
-        throw new TypeError('Illegal invocation');
-    }
-});
+util.defineReadonlyOuterInterface(IDBObjectStore.prototype, readonlyProperties);
+util.defineOuterInterface(IDBObjectStore.prototype, ['name']);
 IDBObjectStore.prototype[Symbol.toStringTag] = 'IDBObjectStorePrototype';
 Object.defineProperty(IDBObjectStore, 'prototype', {
     writable: false

@@ -1,5 +1,12 @@
 import { ShimEventTarget, ShimEvent, ShimCustomEvent } from 'eventtargeter';
 import * as util from './util';
+/**
+ *
+ * @param {string} type
+ * @param {Any} debug
+ * @param {EventInit} evInit
+ * @returns {Event}
+ */
 function createEvent(type, debug, evInit) {
     var ev = new ShimEvent(type, evInit);
     ev.debug = debug;

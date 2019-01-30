@@ -3,12 +3,15 @@ Object.defineProperty(exports, "__esModule", { value: true });
 /* globals DOMException */
 var CFG_1 = require("./CFG");
 /**
- * Creates a native DOMException, for browsers that support it
+ * Creates a native DOMException, for browsers that support it.
+ * @param {string} name
+ * @param {string} message
  * @returns {DOMException}
  */
 function createNativeDOMException(name, message) {
     return new DOMException.prototype.constructor(message, name || 'DOMException');
 }
+// From web-platform-tests testharness.js name_code_map (though not in new spec)
 var codes = {
     IndexSizeError: 1,
     HierarchyRequestError: 3,
@@ -70,13 +73,18 @@ var legacyCodes = {
     INVALID_NODE_TYPE_ERR: 24,
     DATA_CLONE_ERR: 25
 };
+/**
+ *
+ * @returns {DOMException}
+ */
 function createNonNativeDOMExceptionClass() {
     function DOMException(message, name) {
         // const err = Error.prototype.constructor.call(this, message); // Any use to this? Won't set this.message
         this[Symbol.toStringTag] = 'DOMException';
         this._code = name in codes ? codes[name] : (legacyCodes[name] || 0);
         this._name = name || 'Error';
-        this._message = message === undefined ? '' : ('' + message); // Not String() which converts Symbols
+        // We avoid `String()` in this next line as it converts Symbols
+        this._message = message === undefined ? '' : ('' + message); // eslint-disable-line no-implicit-coercion
         Object.defineProperty(this, 'code', {
             configurable: true,
             enumerable: true,
@@ -193,8 +201,9 @@ function isErrorOrDOMErrorOrDOMException(obj) {
 }
 /**
  * Finds the error argument.  This is useful because some WebSQL callbacks
- * pass the error as the first argument, and some pass it as the second argument.
- * @param {array} args
+ * pass the error as the first argument, and some pass it as the second
+ * argument.
+ * @param {Array} args
  * @returns {Error|DOMException|undefined}
  */
 function findError(args) {
@@ -216,12 +225,19 @@ function findError(args) {
     return err;
 }
 exports.findError = findError;
+/**
+ *
+ * @param {external:WebSQLError} webSQLErr
+ * @returns {DOMException}
+ */
 function webSQLErrback(webSQLErr) {
     var name, message;
     switch (webSQLErr.code) {
         case 4: { // SQLError.QUOTA_ERR
             name = 'QuotaExceededError';
-            message = 'The operation failed because there was not enough remaining storage space, or the storage quota was reached and the user declined to give more space to the database.';
+            message = 'The operation failed because there was not enough ' +
+                'remaining storage space, or the storage quota was reached ' +
+                'and the user declined to give more space to the database.';
             break;
         }
         /*

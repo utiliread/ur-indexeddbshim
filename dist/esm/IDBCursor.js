@@ -7,12 +7,16 @@ import * as util from './util';
 import IDBTransaction from './IDBTransaction';
 import * as Key from './Key';
 import * as Sca from './Sca';
-import IDBIndex from './IDBIndex';
+import IDBIndex from './IDBIndex'; // eslint-disable-line import/no-named-as-default
 import CFG from './CFG';
+function IDBCursor() {
+    throw new TypeError('Illegal constructor');
+}
+var IDBCursorAlias = IDBCursor;
 /**
  * The IndexedDB Cursor Object
  * http://dvcs.w3.org/hg/IndexedDB/raw-file/tip/Overview.html#idl-def-IDBCursor
- * @param {IDBKeyRange} range
+ * @param {IDBKeyRange} query
  * @param {string} direction
  * @param {IDBObjectStore} store
  * @param {IDBObjectStore|IDBIndex} source
@@ -20,10 +24,6 @@ import CFG from './CFG';
  * @param {string} valueColumnName
  * @param {boolean} count
  */
-function IDBCursor() {
-    throw new TypeError('Illegal constructor');
-}
-var IDBCursorAlias = IDBCursor;
 IDBCursor.__super = function IDBCursor(query, direction, store, source, keyColumnName, valueColumnName, count) {
     this[Symbol.toStringTag] = 'IDBCursor';
     util.defineReadonlyProperties(this, ['key', 'primaryKey']);
@@ -63,7 +63,7 @@ IDBCursor.__super = function IDBCursor(query, direction, store, source, keyColum
         range.__upperCached = range.upper !== undefined && Key.encode(range.upper, this.__multiEntryIndex);
     }
     this.__gotValue = true;
-    this['continue']();
+    this.continue();
 };
 IDBCursor.__createInstance = function () {
     var args = [];
@@ -158,6 +158,7 @@ IDBCursor.prototype.__findBasic = function (key, primaryKey, tx, success, error,
         error(err);
     });
 };
+var leftBracketRegex = /\[/gu;
 IDBCursor.prototype.__findMultiEntry = function (key, primaryKey, tx, success, error) {
     var me = this;
     if (me.__prefetchedData && me.__prefetchedData.length === me.__prefetchedIndex) {
@@ -240,10 +241,10 @@ IDBCursor.prototype.__findMultiEntry = function (key, primaryKey, tx, success, e
             }
             var reverse_1 = me.direction.indexOf('prev') === 0;
             rows.sort(function (a, b) {
-                if (a.matchingKey.replace('[', 'z') < b.matchingKey.replace('[', 'z')) {
+                if (a.matchingKey.replace(leftBracketRegex, 'z') < b.matchingKey.replace(leftBracketRegex, 'z')) {
                     return reverse_1 ? 1 : -1;
                 }
-                if (a.matchingKey.replace('[', 'z') > b.matchingKey.replace('[', 'z')) {
+                if (a.matchingKey.replace(leftBracketRegex, 'z') > b.matchingKey.replace(leftBracketRegex, 'z')) {
                     return reverse_1 ? -1 : 1;
                 }
                 if (a.key < b.key) {
@@ -408,7 +409,7 @@ IDBCursor.prototype.__continueFinish = function (key, primaryKey, advanceState) 
         }, recordsToPreloadOnContinue);
     });
 };
-IDBCursor.prototype['continue'] = function ( /* key */) {
+IDBCursor.prototype.continue = function ( /* key */) {
     this.__continue(arguments[0]);
 };
 IDBCursor.prototype.continuePrimaryKey = function (key, primaryKey) {
@@ -493,7 +494,7 @@ IDBCursor.prototype.update = function (valueToUpdate) {
     }
     return request;
 };
-IDBCursor.prototype['delete'] = function () {
+IDBCursor.prototype.delete = function () {
     var me = this;
     IDBTransaction.__assertActive(me.__store.transaction);
     me.__store.transaction.__assertWritable();
@@ -525,15 +526,7 @@ IDBCursor.prototype['delete'] = function () {
     }, undefined, me);
 };
 IDBCursor.prototype[Symbol.toStringTag] = 'IDBCursorPrototype';
-['source', 'direction', 'key', 'primaryKey'].forEach(function (prop) {
-    Object.defineProperty(IDBCursor.prototype, prop, {
-        enumerable: true,
-        configurable: true,
-        get: function () {
-            throw new TypeError('Illegal invocation');
-        }
-    });
-});
+util.defineReadonlyOuterInterface(IDBCursor.prototype, ['source', 'direction', 'key', 'primaryKey']);
 Object.defineProperty(IDBCursor, 'prototype', {
     writable: false
 });
@@ -562,13 +555,7 @@ IDBCursorWithValue.__createInstance = function () {
     IDBCursorWithValue.prototype = IDBCursorWithValueAlias.prototype;
     return new IDBCursorWithValue();
 };
-Object.defineProperty(IDBCursorWithValue.prototype, 'value', {
-    enumerable: true,
-    configurable: true,
-    get: function () {
-        throw new TypeError('Illegal invocation');
-    }
-});
+util.defineReadonlyOuterInterface(IDBCursorWithValue.prototype, ['value']);
 IDBCursorWithValue.prototype[Symbol.toStringTag] = 'IDBCursorWithValuePrototype';
 Object.defineProperty(IDBCursorWithValue, 'prototype', {
     writable: false

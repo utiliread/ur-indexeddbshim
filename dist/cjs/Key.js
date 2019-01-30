@@ -69,7 +69,7 @@ var types = {
             // Remove the decimal.
             key32 = (decimalIndex !== -1) ? key32.replace('.', '') : key32;
             // Get the index of the first significant digit.
-            var significantDigitIndex = key32.search(/[^0]/);
+            var significantDigitIndex = key32.search(/[^0]/u);
             // Truncate leading zeros.
             key32 = key32.slice(significantDigitIndex);
             var sign, exponent, mantissa;
@@ -90,20 +90,18 @@ var types = {
                         mantissa = flipBase32(padBase32Mantissa(key32));
                     }
                     // Non-negative cases:
+                    // Negative exponent case:
+                }
+                else if (key < 1) {
+                    sign = signValues.indexOf('smallPositive');
+                    exponent = flipBase32(padBase32Exponent(significantDigitIndex));
+                    mantissa = padBase32Mantissa(key32);
+                    // Non-negative exponent case:
                 }
                 else {
-                    // Negative exponent case:
-                    if (key < 1) {
-                        sign = signValues.indexOf('smallPositive');
-                        exponent = flipBase32(padBase32Exponent(significantDigitIndex));
-                        mantissa = padBase32Mantissa(key32);
-                        // Non-negative exponent case:
-                    }
-                    else {
-                        sign = signValues.indexOf('bigPositive');
-                        exponent = padBase32Exponent((decimalIndex !== -1) ? decimalIndex : key32.length);
-                        mantissa = padBase32Mantissa(key32);
-                    }
+                    sign = signValues.indexOf('bigPositive');
+                    exponent = padBase32Exponent((decimalIndex !== -1) ? decimalIndex : key32.length);
+                    mantissa = padBase32Mantissa(key32);
                 }
                 // Infinite cases:
             }
@@ -118,7 +116,7 @@ var types = {
         // apply signs to the exponent and mantissa, do the base-32 power operation, and return
         // the original JavaScript number values.
         decode: function (key) {
-            var sign = +key.substr(2, 1);
+            var sign = Number(key.substr(2, 1));
             var exponent = key.substr(3, 2);
             var mantissa = key.substr(5, 11);
             switch (signValues[sign]) {
@@ -156,7 +154,7 @@ var types = {
         encode: function (key, inArray) {
             if (inArray) {
                 // prepend each character with a dash, and append a space to the end
-                key = key.replace(/(.)/g, '-$1') + ' ';
+                key = key.replace(/(.)/gu, '-$1') + ' ';
             }
             return keyTypeToEncodedChar.string + '-' + key;
         },
@@ -164,7 +162,7 @@ var types = {
             key = key.slice(2);
             if (inArray) {
                 // remove the space at the end, and the dash before each character
-                key = key.substr(0, key.length - 1).replace(/-(.)/g, '$1');
+                key = key.substr(0, key.length - 1).replace(/-(.)/gu, '$1');
             }
             return key;
         }
@@ -211,7 +209,7 @@ var types = {
         decode: function (key) {
             // Set the entries in buffer's [[ArrayBufferData]] to those in `value`
             var k = key.slice(2);
-            var arr = k.length ? k.split(',').map(function (s) { return parseInt(s, 10); }) : [];
+            var arr = k.length ? k.split(',').map(function (s) { return parseInt(s); }) : [];
             var buffer = new ArrayBuffer(arr.length);
             var uint8 = new Uint8Array(buffer);
             uint8.set(arr);
@@ -221,8 +219,8 @@ var types = {
 };
 /**
  * Return a padded base-32 exponent value.
- * @param {number}
- * @return {string}
+ * @param {number} n
+ * @returns {string}
  */
 function padBase32Exponent(n) {
     n = n.toString(32);
@@ -230,8 +228,8 @@ function padBase32Exponent(n) {
 }
 /**
  * Return a padded base-32 mantissa.
- * @param {string}
- * @return {string}
+ * @param {string} s
+ * @returns {string}
  */
 function padBase32Mantissa(s) {
     return (s + zeros(11)).slice(0, 11);
@@ -255,28 +253,24 @@ function flipBase32(encoded) {
  * Someone may have already figured out a good way to store JavaScript floats as
  * binary strings and convert back. Barring a better method, however, one route
  * may be to generate decimal strings that `parseFloat` decodes predictably.
- * @param {string}
- * @param {string}
- * @return {number}
+ * @param {string} mantissa
+ * @param {string} exponent
+ * @returns {number}
  */
 function pow32(mantissa, exponent) {
     exponent = parseInt(exponent, 32);
     if (exponent < 0) {
-        return roundToPrecision(parseInt(mantissa, 32) * Math.pow(32, exponent - 10));
+        return roundToPrecision(parseInt(mantissa, 32) * (Math.pow(32, (exponent - 10))));
     }
-    else {
-        if (exponent < 11) {
-            var whole = mantissa.slice(0, exponent);
-            whole = parseInt(whole, 32);
-            var fraction = mantissa.slice(exponent);
-            fraction = parseInt(fraction, 32) * Math.pow(32, exponent - 11);
-            return roundToPrecision(whole + fraction);
-        }
-        else {
-            var expansion = mantissa + zeros(exponent - 11);
-            return parseInt(expansion, 32);
-        }
+    if (exponent < 11) {
+        var whole = mantissa.slice(0, exponent);
+        whole = parseInt(whole, 32);
+        var fraction = mantissa.slice(exponent);
+        fraction = parseInt(fraction, 32) * (Math.pow(32, (exponent - 11)));
+        return roundToPrecision(whole + fraction);
     }
+    var expansion = mantissa + zeros(exponent - 11);
+    return parseInt(expansion, 32);
 }
 /**
  *
@@ -287,16 +281,16 @@ function roundToPrecision(num, precision) {
 }
 /**
  * Returns a string of n zeros.
- * @param {number}
- * @return {string}
+ * @param {number} n
+ * @returns {string}
  */
 function zeros(n) {
     return '0'.repeat(n);
 }
 /**
  * Negates numeric strings.
- * @param {string}
- * @return {string}
+ * @param {string} s
+ * @returns {string}
  */
 function negate(s) {
     return '-' + s;
@@ -488,6 +482,7 @@ function evaluateKeyPathOnValueToDecodedValue(value, keyPath, multiEntry, fullKe
                 return true;
             }
             result_1.push(key.value);
+            return false;
         }, []) ? { failure: true } : { value: result_1 };
     }
     if (keyPath === '') {
@@ -524,6 +519,7 @@ function evaluateKeyPathOnValueToDecodedValue(value, keyPath, multiEntry, fullKe
             value = value[idntfr];
             return value === undefined;
         }
+        return false;
     }) ? { failure: true } : { value: value };
 }
 /**
@@ -535,14 +531,13 @@ function evaluateKeyPathOnValueToDecodedValue(value, keyPath, multiEntry, fullKe
 function injectKeyIntoValueUsingKeyPath(value, key, keyPath) {
     var identifiers = keyPath.split('.');
     var last = identifiers.pop();
-    for (var i = 0; i < identifiers.length; i++) {
-        var identifier = identifiers[i];
+    identifiers.forEach(function (identifier) {
         var hop = Object.prototype.hasOwnProperty.call(value, identifier);
         if (!hop) {
             value[identifier] = {};
         }
         value = value[identifier];
-    }
+    });
     value[last] = key; // key is already a `keyValue` in our processing so no need to convert
 }
 exports.injectKeyIntoValueUsingKeyPath = injectKeyIntoValueUsingKeyPath;
@@ -600,9 +595,7 @@ function isMultiEntryMatch(encodedEntry, encodedKey) {
     if (keyType === 'array') {
         return encodedKey.indexOf(encodedEntry) > 1;
     }
-    else {
-        return encodedKey === encodedEntry;
-    }
+    return encodedKey === encodedEntry;
 }
 exports.isMultiEntryMatch = isMultiEntryMatch;
 function findMultiEntryMatches(keyEntry, range) {
@@ -625,15 +618,13 @@ function findMultiEntryMatches(keyEntry, range) {
                     continue;
                 }
             }
-            if (range == null || isKeyInRange(key, range, true)) {
+            if (util.isNullish(range) || isKeyInRange(key, range, true)) {
                 matches.push(key);
             }
         }
     }
-    else {
-        if (range == null || isKeyInRange(keyEntry, range, true)) {
-            matches.push(keyEntry);
-        }
+    else if (util.isNullish(range) || isKeyInRange(keyEntry, range, true)) {
+        matches.push(keyEntry);
     }
     return matches;
 }
@@ -642,8 +633,7 @@ exports.findMultiEntryMatches = findMultiEntryMatches;
 * Not currently in use but keeping for spec parity
 */
 function convertKeyToValue(key) {
-    var type = key.type;
-    var value = key.value;
+    var type = key.type, value = key.value;
     switch (type) {
         case 'number':
         case 'string': {
@@ -698,13 +688,13 @@ function roundTrip(key, inArray) {
 }
 exports.roundTrip = roundTrip;
 var MAX_ALLOWED_CURRENT_NUMBER = 9007199254740992; // 2 ^ 53 (Also equal to `Number.MAX_SAFE_INTEGER + 1`)
-function getCurrentNumber(tx, store, callback, sqlFailCb) {
+function getCurrentNumber(tx, store, func, sqlFailCb) {
     tx.executeSql('SELECT "currNum" FROM __sys__ WHERE "name" = ?', [util.escapeSQLiteStatement(store.__currentName)], function (tx, data) {
         if (data.rows.length !== 1) {
-            callback(1); // eslint-disable-line standard/no-callback-literal
+            func(1);
         }
         else {
-            callback(data.rows.item(0).currNum);
+            func(data.rows.item(0).currNum);
         }
     }, function (tx, error) {
         sqlFailCb(DOMException_1.createDOMException('DataError', 'Could not get the auto increment value for key', error));
@@ -732,7 +722,8 @@ function setCurrentNumber(tx, store, num, successCb, failCb) {
 function generateKeyForStore(tx, store, cb, sqlFailCb) {
     getCurrentNumber(tx, store, function (key) {
         if (key > MAX_ALLOWED_CURRENT_NUMBER) { // 2 ^ 53 (See <https://github.com/w3c/IndexedDB/issues/147>)
-            return cb('failure'); // eslint-disable-line standard/no-callback-literal
+            cb('failure'); // eslint-disable-line standard/no-callback-literal
+            return;
         }
         // Increment current number by 1 (we cannot leverage SQLite's
         //  autoincrement (and decrement when not needed), as decrementing

@@ -5,6 +5,13 @@ exports.ShimEventTarget = eventtargeter_1.ShimEventTarget;
 exports.ShimEvent = eventtargeter_1.ShimEvent;
 exports.ShimCustomEvent = eventtargeter_1.ShimCustomEvent;
 var util = require("./util");
+/**
+ *
+ * @param {string} type
+ * @param {Any} debug
+ * @param {EventInit} evInit
+ * @returns {Event}
+ */
 function createEvent(type, debug, evInit) {
     var ev = new eventtargeter_1.ShimEvent(type, evInit);
     ev.debug = debug;

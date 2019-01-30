@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+var sync_promise_1 = require("sync-promise");
 var DOMException_1 = require("./DOMException");
 var IDBCursor_1 = require("./IDBCursor");
 var util = require("./util");
@@ -9,14 +10,13 @@ var IDBTransaction_1 = require("./IDBTransaction");
 var Sca = require("./Sca");
 var CFG_1 = require("./CFG");
 var IDBObjectStore_1 = require("./IDBObjectStore");
-var sync_promise_1 = require("sync-promise");
 var readonlyProperties = ['objectStore', 'keyPath', 'multiEntry', 'unique'];
 /**
  * IDB Index
  * http://www.w3.org/TR/IndexedDB/#idl-def-IDBIndex
  * @param {IDBObjectStore} store
  * @param {IDBIndexProperties} indexProperties
- * @constructor
+ * @class
  */
 function IDBIndex() {
     throw new TypeError('Illegal constructor');
@@ -33,9 +33,9 @@ IDBIndex.__createInstance = function (store, indexProperties) {
         me.__name = me.__originalName = indexProperties.columnName;
         me.__keyPath = Array.isArray(indexProperties.keyPath) ? indexProperties.keyPath.slice() : indexProperties.keyPath;
         var optionalParams = indexProperties.optionalParams;
-        me.__multiEntry = !!(optionalParams && optionalParams.multiEntry);
-        me.__unique = !!(optionalParams && optionalParams.unique);
-        me.__deleted = !!indexProperties.__deleted;
+        me.__multiEntry = Boolean(optionalParams && optionalParams.multiEntry);
+        me.__unique = Boolean(optionalParams && optionalParams.unique);
+        me.__deleted = Boolean(indexProperties.__deleted);
         me.__objectStore.__cursors = indexProperties.cursors || [];
         Object.defineProperty(me, '__currentName', {
             get: function () {
@@ -285,7 +285,7 @@ IDBIndex.__updateIndexList = function (store, tx, success, failure) {
                 unique: idx.unique,
                 multiEntry: idx.multiEntry
             },
-            deleted: !!idx.deleted
+            deleted: Boolean(idx.deleted)
         };
     }
     CFG_1.default.DEBUG && console.log('Updating the index list for ' + store.__currentName, indexList);
@@ -313,7 +313,7 @@ IDBIndex.prototype.__fetchIndexData = function (range, opType, nullDisallowed, c
         throw DOMException_1.createDOMException('InvalidStateError', "This index's object store has been deleted");
     }
     IDBTransaction_1.default.__assertActive(me.objectStore.transaction);
-    if (nullDisallowed && range == null) {
+    if (nullDisallowed && util.isNullish(range)) {
         throw DOMException_1.createDOMException('DataError', 'No key or range was specified');
     }
     var fetchArgs = buildFetchIndexDataSQL(nullDisallowed, me, range, opType, false);
@@ -464,7 +464,10 @@ IDBIndex.prototype.__renameIndex = function (store, oldName, newName, colInfoToP
                                 reject(err);
                             });
                         }));
-                        sync_promise_1.default.all(indexCreations).then(finish, error);
+                        sync_promise_1.default.all(indexCreations).then(finish, error).catch(function (err) {
+                            console.log('Index rename error');
+                            throw err;
+                        });
                     }, sqlError);
                 }, sqlError);
             }, sqlError);
@@ -474,25 +477,8 @@ IDBIndex.prototype.__renameIndex = function (store, oldName, newName, colInfoToP
 Object.defineProperty(IDBIndex, Symbol.hasInstance, {
     value: function (obj) { return util.isObj(obj) && typeof obj.openCursor === 'function' && typeof obj.multiEntry === 'boolean'; }
 });
-readonlyProperties.forEach(function (prop) {
-    Object.defineProperty(IDBIndex.prototype, prop, {
-        enumerable: true,
-        configurable: true,
-        get: function () {
-            throw new TypeError('Illegal invocation');
-        }
-    });
-});
-Object.defineProperty(IDBIndex.prototype, 'name', {
-    enumerable: true,
-    configurable: true,
-    get: function () {
-        throw new TypeError('Illegal invocation');
-    },
-    set: function (val) {
-        throw new TypeError('Illegal invocation');
-    }
-});
+util.defineReadonlyOuterInterface(IDBIndex.prototype, readonlyProperties);
+util.defineOuterInterface(IDBIndex.prototype, ['name']);
 IDBIndex.prototype[Symbol.toStringTag] = 'IDBIndexPrototype';
 Object.defineProperty(IDBIndex, 'prototype', {
     writable: false
@@ -568,7 +554,7 @@ function executeFetchIndexData(count, unboundedDisallowed, index, hasKey, range,
 }
 exports.executeFetchIndexData = executeFetchIndexData;
 function buildFetchIndexDataSQL(nullDisallowed, index, range, opType, multiChecks) {
-    var hasRange = nullDisallowed || range != null;
+    var hasRange = nullDisallowed || !util.isNullish(range);
     var col = opType === 'count' ? 'key' : opType; // It doesn't matter which column we use for 'count' as long as it is valid
     var sql = [
         'SELECT', util.sqlQuote(col) + (index.multiEntry ? ', ' + util.escapeIndexNameForSQL(index.name) : ''),

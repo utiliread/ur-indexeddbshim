@@ -1,15 +1,17 @@
 import CFG from './CFG';
 import { encode as keyEncode, decode as keyDecode } from './Key';
 /**
- * Compares two keys
- * @param key1
- * @param key2
+ * Compares two keys.
+ * @param first
+ * @param second
  * @returns {number}
  */
 function cmp(first, second) {
     var encodedKey1 = keyEncode(first);
     var encodedKey2 = keyEncode(second);
-    var result = encodedKey1 > encodedKey2 ? 1 : encodedKey1 === encodedKey2 ? 0 : -1;
+    var result = encodedKey1 > encodedKey2
+        ? 1
+        : encodedKey1 === encodedKey2 ? 0 : -1;
     if (CFG.DEBUG) {
         // verify that the keys encoded correctly
         var decodedKey1 = keyDecode(encodedKey1);
@@ -22,12 +24,15 @@ function cmp(first, second) {
             second = JSON.stringify(second);
             decodedKey2 = JSON.stringify(decodedKey2);
         }
-        // encoding/decoding mismatches are usually due to a loss of floating-point precision
+        // Encoding/decoding mismatches are usually due to a loss of
+        //   floating-point precision
         if (decodedKey1 !== first) {
-            console.warn(first + ' was incorrectly encoded as ' + decodedKey1);
+            console.warn(// eslint-disable-line no-console
+            first + ' was incorrectly encoded as ' + decodedKey1);
         }
         if (decodedKey2 !== second) {
-            console.warn(second + ' was incorrectly encoded as ' + decodedKey2);
+            console.warn(// eslint-disable-line no-console
+            second + ' was incorrectly encoded as ' + decodedKey2);
         }
     }
     return result;

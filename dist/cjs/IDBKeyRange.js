@@ -40,8 +40,8 @@ IDBKeyRange.__createInstance = function (lower, upper, lowerOpen, upperOpen) {
         }
         this.__lower = lowerConverted;
         this.__upper = upperConverted;
-        this.__lowerOpen = !!lowerOpen;
-        this.__upperOpen = !!upperOpen;
+        this.__lowerOpen = Boolean(lowerOpen);
+        this.__upperOpen = Boolean(upperOpen);
     }
     IDBKeyRange.prototype = IDBKeyRangeAlias.prototype;
     return new IDBKeyRange();
@@ -83,22 +83,30 @@ IDBKeyRange.bound = function (lower, upper /* , lowerOpen, upperOpen */) {
 };
 IDBKeyRange.prototype[Symbol.toStringTag] = 'IDBKeyRangePrototype';
 readonlyProperties.forEach(function (prop) {
+    var _a;
     Object.defineProperty(IDBKeyRange.prototype, '__' + prop, {
         enumerable: false,
         configurable: false,
         writable: true
     });
-    Object.defineProperty(IDBKeyRange.prototype, prop, {
-        enumerable: true,
-        configurable: true,
-        get: function () {
-            // We can't do a regular instanceof check as it will create a loop given our hasInstance implementation
-            if (!util.isObj(this) || typeof this.__lowerOpen !== 'boolean') {
-                throw new TypeError('Illegal invocation');
-            }
-            return this['__' + prop];
-        }
-    });
+    // Ensure for proper interface testing that "get <name>" is the function name
+    var o = (_a = {},
+        Object.defineProperty(_a, prop, {
+            get: function () {
+                // We can't do a regular instanceof check as it will create a loop given our hasInstance implementation
+                if (!util.isObj(this) || typeof this.__lowerOpen !== 'boolean') {
+                    throw new TypeError('Illegal invocation');
+                }
+                return this['__' + prop];
+            },
+            enumerable: true,
+            configurable: true
+        }),
+        _a);
+    var desc = Object.getOwnPropertyDescriptor(o, prop);
+    // desc.enumerable = true; // Default
+    // desc.configurable = true; // Default
+    Object.defineProperty(IDBKeyRange.prototype, prop, desc);
 });
 Object.defineProperty(IDBKeyRange, Symbol.hasInstance, {
     value: function (obj) { return util.isObj(obj) && 'upper' in obj && typeof obj.lowerOpen === 'boolean'; }
@@ -138,12 +146,12 @@ exports.setSQLForKeyRange = setSQLForKeyRange;
 function convertValueToKeyRange(value, nullDisallowed) {
     if (util.instanceOf(value, IDBKeyRange)) {
         // We still need to validate IDBKeyRange-like objects (the above check is based on loose duck-typing)
-        if (!value.toString() !== '[object IDBKeyRange]') {
+        if (value.toString() !== '[object IDBKeyRange]') {
             return IDBKeyRange.__createInstance(value.lower, value.upper, value.lowerOpen, value.upperOpen);
         }
         return value;
     }
-    if (value == null) {
+    if (util.isNullish(value)) {
         if (nullDisallowed) {
             throw DOMException_1.createDOMException('DataError', 'No key or range was specified');
         }

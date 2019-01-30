@@ -1,17 +1,27 @@
+var __assign = (this && this.__assign) || function () {
+    __assign = Object.assign || function(t) {
+        for (var s, i = 1, n = arguments.length; i < n; i++) {
+            s = arguments[i];
+            for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
+                t[p] = s[p];
+        }
+        return t;
+    };
+    return __assign.apply(this, arguments);
+};
+import { EventTargetFactory } from 'eventtargeter';
 import { createDOMException } from './DOMException';
 import { createEvent } from './Event';
 import * as util from './util';
 import DOMStringList from './DOMStringList';
 import IDBObjectStore from './IDBObjectStore';
 import IDBTransaction from './IDBTransaction';
-import CFG from './CFG';
-import { EventTargetFactory } from 'eventtargeter';
 var listeners = ['onabort', 'onclose', 'onerror', 'onversionchange'];
 var readonlyProperties = ['name', 'version', 'objectStoreNames'];
 /**
  * IDB Database Object
  * http://dvcs.w3.org/hg/IndexedDB/raw-file/tip/Overview.html#database-interface
- * @constructor
+ * @class
  */
 function IDBDatabase() {
     throw new TypeError('Illegal constructor');
@@ -19,7 +29,6 @@ function IDBDatabase() {
 var IDBDatabaseAlias = IDBDatabase;
 IDBDatabase.__createInstance = function (db, name, oldVersion, version, storeProperties) {
     function IDBDatabase() {
-        var _this = this;
         this[Symbol.toStringTag] = 'IDBDatabase';
         util.defineReadonlyProperties(this, readonlyProperties);
         this.__db = db;
@@ -28,21 +37,7 @@ IDBDatabase.__createInstance = function (db, name, oldVersion, version, storePro
         this.__version = version;
         this.__name = name;
         this.__upgradeTransaction = null;
-        listeners.forEach(function (listener) {
-            Object.defineProperty(_this, listener, {
-                enumerable: true,
-                configurable: true,
-                get: function () {
-                    return this['__' + listener];
-                },
-                set: function (val) {
-                    this['__' + listener] = val;
-                }
-            });
-        });
-        listeners.forEach(function (l) {
-            _this[l] = null;
-        });
+        util.defineListenerProperties(this, listeners);
         this.__setOptions({
             legacyOutputDidListenersThrowFlag: true // Event hook for IndexedB
         });
@@ -94,9 +89,9 @@ IDBDatabase.prototype.createObjectStore = function (storeName /* , createOptions
     IDBTransaction.__assertVersionChange(this.__versionTransaction); // this.__versionTransaction may not exist if called mistakenly by user in onsuccess
     this.throwIfUpgradeTransactionNull();
     IDBTransaction.__assertActive(this.__versionTransaction);
-    createOptions = Object.assign({}, createOptions);
+    createOptions = __assign({}, createOptions);
     var keyPath = createOptions.keyPath;
-    keyPath = keyPath === undefined ? null : keyPath = util.convertToSequenceDOMString(keyPath);
+    keyPath = keyPath === undefined ? null : util.convertToSequenceDOMString(keyPath);
     if (keyPath !== null && !util.isValidKeyPath(keyPath)) {
         throw createDOMException('SyntaxError', 'The keyPath argument contains an invalid key path.');
     }
@@ -160,6 +155,7 @@ IDBDatabase.prototype.transaction = function (storeNames /* , mode */) {
     }
     var mode = arguments[1];
     storeNames = util.isIterable(storeNames)
+        // Creating new array also ensures sequence is passed by value: https://heycam.github.io/webidl/#idl-sequence
         ? new Set(// to be unique
         util.convertToSequenceDOMString(storeNames) // iterables have `ToString` applied (and we convert to array for convenience)
         ).slice().sort() // must be sorted
@@ -174,13 +170,7 @@ IDBDatabase.prototype.transaction = function (storeNames /* , mode */) {
     //   prioritizing readonly but not starving readwrite).
     // Even for readonly transactions, due to [issue 17](https://github.com/nolanlawson/node-websql/issues/17),
     //   we're not currently actually running the SQL requests in parallel.
-    if (typeof mode === 'number') {
-        mode = mode === 1 ? 'readwrite' : 'readonly';
-        CFG.DEBUG && console.log('Mode should be a string, but was specified as ', mode); // Todo Deprecated: Remove this option as no longer in spec
-    }
-    else {
-        mode = mode || 'readonly';
-    }
+    mode = mode || 'readonly';
     IDBTransaction.__assertNotVersionChange(this.__versionTransaction);
     if (this.__closed) {
         throw createDOMException('InvalidStateError', 'An attempt was made to start a new transaction on a database connection that is not open');
@@ -228,27 +218,8 @@ IDBDatabase.prototype.__forceClose = function (msg) {
         trans.__abortTransaction(createDOMException('AbortError', 'The connection was force-closed: ' + (msg || '')));
     });
 };
-listeners.forEach(function (listener) {
-    Object.defineProperty(IDBDatabase.prototype, listener, {
-        enumerable: true,
-        configurable: true,
-        get: function () {
-            throw new TypeError('Illegal invocation');
-        },
-        set: function (val) {
-            throw new TypeError('Illegal invocation');
-        }
-    });
-});
-readonlyProperties.forEach(function (prop) {
-    Object.defineProperty(IDBDatabase.prototype, prop, {
-        enumerable: true,
-        configurable: true,
-        get: function () {
-            throw new TypeError('Illegal invocation');
-        }
-    });
-});
+util.defineOuterInterface(IDBDatabase.prototype, listeners);
+util.defineReadonlyOuterInterface(IDBDatabase.prototype, readonlyProperties);
 Object.defineProperty(IDBDatabase.prototype, 'constructor', {
     enumerable: false,
     writable: true,

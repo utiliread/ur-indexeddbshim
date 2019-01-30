@@ -2,7 +2,7 @@ import CFG from './CFG';
 import expandsOnNFD from './unicode-regex';
 function escapeUnmatchedSurrogates(arg) {
     // http://stackoverflow.com/a/6701665/271577
-    return arg.replace(/([\uD800-\uDBFF])(?![\uDC00-\uDFFF])|(^|[^\uD800-\uDBFF])([\uDC00-\uDFFF])/g, function (_, unmatchedHighSurrogate, precedingLow, unmatchedLowSurrogate) {
+    return arg.replace(/([\uD800-\uDBFF])(?![\uDC00-\uDFFF])|(^|[^\uD800-\uDBFF])([\uDC00-\uDFFF])/gu, function (_, unmatchedHighSurrogate, precedingLow, unmatchedLowSurrogate) {
         // Could add a corresponding surrogate for compatibility with `node-sqlite3`: http://bugs.python.org/issue12569 and http://stackoverflow.com/a/6701665/271577
         //   but Chrome having problems
         if (unmatchedHighSurrogate) {
@@ -14,20 +14,26 @@ function escapeUnmatchedSurrogates(arg) {
 function escapeNameForSQLiteIdentifier(arg) {
     // http://stackoverflow.com/a/6701665/271577
     return '_' + // Prevent empty string
-        escapeUnmatchedSurrogates(arg.replace(/\^/g, '^^') // Escape our escape
+        escapeUnmatchedSurrogates(arg.replace(/\^/gu, '^^') // Escape our escape
             // http://www.sqlite.org/src/tktview?name=57c971fc74
-            .replace(/\0/g, '^0')
+            .replace(/\0/gu, '^0')
             // We need to avoid identifiers being treated as duplicates based on SQLite's ASCII-only case-insensitive table and column names
             // (For SQL in general, however, see http://stackoverflow.com/a/17215009/271577
             // See also https://www.sqlite.org/faq.html#q18 re: Unicode (non-ASCII) case-insensitive not working
-            .replace(/([A-Z])/g, '^$1'));
+            .replace(/([A-Z])/gu, '^$1'));
 }
 // The escaping of unmatched surrogates was needed by Chrome but not Node
 function escapeSQLiteStatement(arg) {
-    return escapeUnmatchedSurrogates(arg.replace(/\^/g, '^^').replace(/\0/g, '^0'));
+    return escapeUnmatchedSurrogates(arg.replace(/\^/gu, '^^').replace(/\0/gu, '^0'));
 }
 function unescapeSQLiteResponse(arg) {
-    return unescapeUnmatchedSurrogates(arg).replace(/\^0/g, '\0').replace(/\^\^/g, '^');
+    return unescapeUnmatchedSurrogates(arg)
+        .replace(/(\^+)0/gu, function (_, esc) {
+        return esc.length % 2
+            ? '\0'
+            : _;
+    })
+        .replace(/\^\^/gu, '^');
 }
 function sqlEscape(arg) {
     // https://www.sqlite.org/lang_keywords.html
@@ -35,7 +41,7 @@ function sqlEscape(arg) {
     // There is no need to escape ', `, or [], as
     //   we should always be within double quotes
     // NUL should have already been stripped
-    return arg.replace(/"/g, '""');
+    return arg.replace(/"/gu, '""');
 }
 function sqlQuote(arg) {
     return '"' + sqlEscape(arg) + '"';
@@ -54,14 +60,14 @@ function escapeDatabaseNameForSQLAndFiles(db) {
         // Todo: Remove `.source` when
         //   https://github.com/babel/babel/issues/5978 completed (see also
         //   https://github.com/axemclion/IndexedDBShim/issues/311#issuecomment-316090147 )
-        db = db.replace(new RegExp(expandsOnNFD.source, 'g'), function (expandable) {
+        db = db.replace(new RegExp(expandsOnNFD.source, 'gu'), function (expandable) {
             return '^4' + padStart(expandable.codePointAt().toString(16), 6, '0');
         });
     }
     if (CFG.databaseCharacterEscapeList !== false) {
         db = db.replace((CFG.databaseCharacterEscapeList
-            ? new RegExp(CFG.databaseCharacterEscapeList, 'g')
-            : /[\u0000-\u001F\u007F"*/:<>?\\|]/g), // eslint-disable-line no-control-regex
+            ? new RegExp(CFG.databaseCharacterEscapeList, 'gu')
+            : /[\u0000-\u001F\u007F"*/:<>?\\|]/gu), // eslint-disable-line no-control-regex
         function (n0) {
             return '^1' + padStart(n0.charCodeAt().toString(16), 2, '0');
         });
@@ -75,12 +81,11 @@ function escapeDatabaseNameForSQLAndFiles(db) {
 }
 function unescapeUnmatchedSurrogates(arg) {
     return arg
-        .replace(/(\^+)3(d[0-9a-f]{3})/g, function (_, esc, lowSurr) {
+        .replace(/(\^+)3(d[0-9a-f]{3})/gu, function (_, esc, lowSurr) {
         return esc.length % 2
             ? esc.slice(1) + String.fromCharCode(parseInt(lowSurr, 16))
             : _;
-    })
-        .replace(/(\^+)2(d[0-9a-f]{3})/g, function (_, esc, highSurr) {
+    }).replace(/(\^+)2(d[0-9a-f]{3})/gu, function (_, esc, highSurr) {
         return esc.length % 2
             ? esc.slice(1) + String.fromCharCode(parseInt(highSurr, 16))
             : _;
@@ -97,29 +102,26 @@ function unescapeDatabaseNameForSQLAndFiles(db) {
     }
     return unescapeUnmatchedSurrogates(db.slice(2) // D_
         // CFG.databaseCharacterEscapeList
-        .replace(/(\^+)1([0-9a-f]{2})/g, function (_, esc, hex) {
+        .replace(/(\^+)1([0-9a-f]{2})/gu, function (_, esc, hex) {
         return esc.length % 2
             ? esc.slice(1) + String.fromCharCode(parseInt(hex, 16))
             : _;
-    })
         // CFG.escapeNFDForDatabaseNames
-        .replace(/(\^+)4([0-9a-f]{6})/g, function (_, esc, hex) {
+    }).replace(/(\^+)4([0-9a-f]{6})/gu, function (_, esc, hex) {
         return esc.length % 2
             ? esc.slice(1) + String.fromCodePoint(parseInt(hex, 16))
             : _;
-    }))
-        // escapeNameForSQLiteIdentifier (including unescapeUnmatchedSurrogates() above)
-        .replace(/(\^+)([A-Z])/g, function (_, esc, upperCase) {
+    })
+    // escapeNameForSQLiteIdentifier (including unescapeUnmatchedSurrogates() above)
+    ).replace(/(\^+)([A-Z])/gu, function (_, esc, upperCase) {
         return esc.length % 2
             ? esc.slice(1) + upperCase
             : _;
-    })
-        .replace(/(\^+)0/g, function (_, esc) {
+    }).replace(/(\^+)0/gu, function (_, esc) {
         return esc.length % 2
             ? esc.slice(1) + '\0'
             : _;
-    })
-        .replace(/\^\^/g, '^');
+    }).replace(/\^\^/gu, '^');
 }
 function escapeStoreNameForSQL(store) {
     return sqlQuote('S' + escapeNameForSQLiteIdentifier(store));
@@ -132,7 +134,7 @@ function escapeIndexNameForSQLKeyColumn(index) {
 }
 function sqlLIKEEscape(str) {
     // https://www.sqlite.org/lang_expr.html#like
-    return sqlEscape(str).replace(/\^/g, '^^');
+    return sqlEscape(str).replace(/\^/gu, '^^');
 }
 // Babel doesn't seem to provide a means of using the `instanceof` operator with Symbol.hasInstance (yet?)
 function instanceOf(obj, Clss) {
@@ -161,21 +163,98 @@ function isBinary(obj) {
 function isIterable(obj) {
     return isObj(obj) && typeof obj[Symbol.iterator] === 'function';
 }
+function defineOuterInterface(obj, props) {
+    props.forEach(function (prop) {
+        var _a;
+        var o = (_a = {},
+            Object.defineProperty(_a, prop, {
+                get: function () {
+                    throw new TypeError('Illegal invocation');
+                },
+                enumerable: true,
+                configurable: true
+            }),
+            Object.defineProperty(_a, prop, {
+                set: function (val) {
+                    throw new TypeError('Illegal invocation');
+                },
+                enumerable: true,
+                configurable: true
+            }),
+            _a);
+        var desc = Object.getOwnPropertyDescriptor(o, prop);
+        Object.defineProperty(obj, prop, desc);
+    });
+}
+function defineReadonlyOuterInterface(obj, props) {
+    props.forEach(function (prop) {
+        var _a;
+        var o = (_a = {},
+            Object.defineProperty(_a, prop, {
+                get: function () {
+                    throw new TypeError('Illegal invocation');
+                },
+                enumerable: true,
+                configurable: true
+            }),
+            _a);
+        var desc = Object.getOwnPropertyDescriptor(o, prop);
+        Object.defineProperty(obj, prop, desc);
+    });
+}
+function defineListenerProperties(obj, listeners) {
+    listeners = typeof listeners === 'string' ? [listeners] : listeners;
+    listeners.forEach(function (listener) {
+        var _a;
+        var o = (_a = {},
+            Object.defineProperty(_a, listener, {
+                get: function () {
+                    return obj['__' + listener];
+                },
+                enumerable: true,
+                configurable: true
+            }),
+            Object.defineProperty(_a, listener, {
+                set: function (val) {
+                    obj['__' + listener] = val;
+                },
+                enumerable: true,
+                configurable: true
+            }),
+            _a);
+        var desc = Object.getOwnPropertyDescriptor(o, listener);
+        // desc.enumerable = true; // Default
+        // desc.configurable = true; // Default // Needed by support.js in W3C IndexedDB tests (for openListeners)
+        Object.defineProperty(obj, listener, desc);
+    });
+    listeners.forEach(function (l) {
+        obj[l] = null;
+    });
+}
 function defineReadonlyProperties(obj, props) {
     props = typeof props === 'string' ? [props] : props;
     props.forEach(function (prop) {
+        var _a;
         Object.defineProperty(obj, '__' + prop, {
             enumerable: false,
             configurable: false,
             writable: true
         });
-        Object.defineProperty(obj, prop, {
-            enumerable: true,
-            configurable: true,
-            get: function () {
-                return this['__' + prop];
-            }
-        });
+        // We must resort to this to get "get <name>" as
+        //   the function `name` for proper IDL
+        var o = (_a = {},
+            Object.defineProperty(_a, prop, {
+                get: function () {
+                    return this['__' + prop];
+                },
+                enumerable: true,
+                configurable: true
+            }),
+            _a);
+        var desc = Object.getOwnPropertyDescriptor(o, prop);
+        // desc.enumerable = true; // Default
+        // desc.configurable = true; // Default
+        Object.defineProperty(obj, prop, desc);
     });
 }
 function isIdentifier(item) {
@@ -188,7 +267,7 @@ function isIdentifier(item) {
     var UnicodeIDContinue = CFG.UnicodeIDContinue || '[$0-9A-Z_a-z]';
     var IdentifierStart = '(?:' + UnicodeIDStart + '|[$_])';
     var IdentifierPart = '(?:' + UnicodeIDContinue + '|[$_\u200C\u200D])';
-    return (new RegExp('^' + IdentifierStart + IdentifierPart + '*$')).test(item);
+    return (new RegExp('^' + IdentifierStart + IdentifierPart + '*$', 'u')).test(item);
 }
 function isValidKeyPathString(keyPathString) {
     return typeof keyPathString === 'string' &&
@@ -197,10 +276,9 @@ function isValidKeyPathString(keyPathString) {
 function isValidKeyPath(keyPath) {
     return isValidKeyPathString(keyPath) || (Array.isArray(keyPath) && keyPath.length &&
         // Convert array from sparse to dense http://www.2ality.com/2012/06/dense-arrays.html
-        Array.apply(null, keyPath).every(function (kpp) {
-            // See also https://heycam.github.io/webidl/#idl-DOMString
-            return isValidKeyPathString(kpp); // Should already be converted to string by here
-        }));
+        // See also https://heycam.github.io/webidl/#idl-DOMString
+        keyPath.slice().every(isValidKeyPathString) // eslint-disable-line prefer-spread
+    );
 }
 function enforceRange(number, type) {
     number = Math.floor(Number(number));
@@ -230,7 +308,8 @@ function convertToDOMString(v, treatNullAs) {
     return v === null && treatNullAs ? '' : ToString(v);
 }
 function ToString(o) {
-    return '' + o; // `String()` will not throw with Symbols
+    // `String()` will not throw with Symbols
+    return '' + o; // eslint-disable-line no-implicit-coercion
 }
 function convertToSequenceDOMString(val) {
     // Per <https://heycam.github.io/webidl/#idl-sequence>, converting to a sequence works with iterables
@@ -240,8 +319,14 @@ function convertToSequenceDOMString(val) {
     }
     return ToString(val);
 }
+function isNullish(v) {
+    return v === null || v === undefined;
+}
+function hasOwn(obj, prop) {
+    return {}.hasOwnProperty.call(obj, prop);
+}
 // Todo: Replace with `String.prototype.padStart` when targeting supporting Node version
 function padStart(str, ct, fill) {
     return new Array(ct - (String(str)).length + 1).join(fill) + str;
 }
-export { escapeSQLiteStatement, unescapeSQLiteResponse, escapeDatabaseNameForSQLAndFiles, unescapeDatabaseNameForSQLAndFiles, escapeStoreNameForSQL, escapeIndexNameForSQL, escapeIndexNameForSQLKeyColumn, sqlLIKEEscape, sqlQuote, instanceOf, isObj, isDate, isBlob, isRegExp, isFile, isBinary, isIterable, defineReadonlyProperties, isValidKeyPath, enforceRange, convertToDOMString, convertToSequenceDOMString, padStart };
+export { escapeSQLiteStatement, unescapeSQLiteResponse, escapeDatabaseNameForSQLAndFiles, unescapeDatabaseNameForSQLAndFiles, escapeStoreNameForSQL, escapeIndexNameForSQL, escapeIndexNameForSQLKeyColumn, sqlLIKEEscape, sqlQuote, instanceOf, isObj, isDate, isBlob, isRegExp, isFile, isBinary, isIterable, defineOuterInterface, defineReadonlyOuterInterface, defineListenerProperties, defineReadonlyProperties, isValidKeyPath, enforceRange, convertToDOMString, convertToSequenceDOMString, isNullish, hasOwn, padStart };

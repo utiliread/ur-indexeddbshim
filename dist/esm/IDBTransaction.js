@@ -1,11 +1,11 @@
+import { EventTargetFactory } from 'eventtargeter';
+import SyncPromise from 'sync-promise';
 import { createEvent } from './Event';
 import { logError, findError, webSQLErrback, createDOMException } from './DOMException';
 import { IDBRequest } from './IDBRequest';
 import * as util from './util';
 import IDBObjectStore from './IDBObjectStore';
 import CFG from './CFG';
-import { EventTargetFactory } from 'eventtargeter';
-import SyncPromise from 'sync-promise';
 var uniqueID = 0;
 var listeners = ['onabort', 'oncomplete', 'onerror'];
 var readonlyProperties = ['objectStoreNames', 'mode', 'db', 'error'];
@@ -15,7 +15,7 @@ var readonlyProperties = ['objectStoreNames', 'mode', 'db', 'error'];
  * @param {IDBDatabase} db
  * @param {string[]} storeNames
  * @param {string} mode
- * @constructor
+ * @class
  */
 function IDBTransaction() {
     throw new TypeError('Illegal constructor');
@@ -44,21 +44,7 @@ IDBTransaction.__createInstance = function (db, storeNames, mode) {
                 configurable: true
             });
         });
-        listeners.forEach(function (listener) {
-            Object.defineProperty(_this, listener, {
-                enumerable: true,
-                configurable: true,
-                get: function () {
-                    return this['__' + listener];
-                },
-                set: function (val) {
-                    this['__' + listener] = val;
-                }
-            });
-        });
-        listeners.forEach(function (l) {
-            _this[l] = null;
-        });
+        util.defineListenerProperties(this, listeners);
         me.__storeHandles = {};
         // Kick off the transaction as soon as all synchronous code is done
         setTimeout(function () { me.__executeRequests(); }, 0);
@@ -304,9 +290,9 @@ IDBTransaction.prototype.__addNonRequestToTransactionQueue = function (callback,
 IDBTransaction.prototype.__pushToQueue = function (request, callback, args) {
     this.__assertActive();
     this.__requests.push({
-        'op': callback,
-        'args': args,
-        'req': request
+        op: callback,
+        args: args,
+        req: request
     });
 };
 IDBTransaction.prototype.__assertActive = function () {
@@ -403,9 +389,10 @@ IDBTransaction.prototype.__abortTransaction = function (err) {
         me.__requests.filter(function (q, i, arr) {
             return q.req && q.req.__readyState !== 'done' && [i, -1].includes(arr.map(function (q) { return q.req; }).lastIndexOf(q.req));
         }).reduce(function (promises, q) {
-            // We reduce to a chain of promises to be queued in order, so we cannot use `Promise.all`,
-            //  and I'm unsure whether `setTimeout` currently behaves first-in-first-out with the same timeout
-            //  so we could just use a `forEach`.
+            // We reduce to a chain of promises to be queued in order, so we cannot
+            //  use `Promise.all`, and I'm unsure whether `setTimeout` currently
+            //  behaves first-in-first-out with the same timeout so we could
+            //  just use a `forEach`.
             return promises.then(function () {
                 q.req.__readyState = 'done';
                 q.req.__result = undefined;
@@ -426,6 +413,10 @@ IDBTransaction.prototype.__abortTransaction = function (err) {
                 me.__storeHandles = {};
                 me.dispatchEvent(createEvent('__abort'));
             });
+            return undefined;
+        }).catch(function (err) {
+            console.log('Abort error');
+            throw err;
         });
     }
     me.__transFinishedCb(true, function (rollback) {
@@ -502,28 +493,8 @@ IDBTransaction.__assertActive = function (tx) {
 IDBTransaction.prototype.__getParent = function () {
     return this.db;
 };
-listeners.forEach(function (listener) {
-    Object.defineProperty(IDBTransaction.prototype, listener, {
-        enumerable: true,
-        configurable: true,
-        get: function () {
-            throw new TypeError('Illegal invocation');
-        },
-        set: function (val) {
-            throw new TypeError('Illegal invocation');
-        }
-    });
-});
-// Illegal invocations
-readonlyProperties.forEach(function (prop) {
-    Object.defineProperty(IDBTransaction.prototype, prop, {
-        enumerable: true,
-        configurable: true,
-        get: function () {
-            throw new TypeError('Illegal invocation');
-        }
-    });
-});
+util.defineOuterInterface(IDBTransaction.prototype, listeners);
+util.defineReadonlyOuterInterface(IDBTransaction.prototype, readonlyProperties);
 Object.defineProperty(IDBTransaction.prototype, 'constructor', {
     enumerable: false,
     writable: true,

@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-var DOMException_1 = require("./DOMException");
 var eventtargeter_1 = require("eventtargeter");
+var DOMException_1 = require("./DOMException");
 var util = require("./util");
 var listeners = ['onsuccess', 'onerror'];
 var readonlyProperties = ['source', 'transaction', 'readyState'];
@@ -15,7 +15,6 @@ function IDBRequest() {
 }
 exports.IDBRequest = IDBRequest;
 IDBRequest.__super = function IDBRequest() {
-    var _this = this;
     this[Symbol.toStringTag] = 'IDBRequest';
     this.__setOptions({
         legacyOutputDidListenersThrowFlag: true // Event hook for IndexedB
@@ -38,20 +37,7 @@ IDBRequest.__super = function IDBRequest() {
         });
     }, this);
     util.defineReadonlyProperties(this, readonlyProperties);
-    listeners.forEach(function (listener) {
-        Object.defineProperty(_this, listener, {
-            configurable: true,
-            get: function () {
-                return this['__' + listener];
-            },
-            set: function (val) {
-                this['__' + listener] = val;
-            }
-        });
-    }, this);
-    listeners.forEach(function (l) {
-        _this[l] = null;
-    });
+    util.defineListenerProperties(this, listeners);
     this.__result = undefined;
     this.__error = this.__source = this.__transaction = null;
     this.__readyState = 'pending';
@@ -68,36 +54,9 @@ IDBRequest.prototype.__getParent = function () {
     return this.__transaction;
 };
 // Illegal invocations
-readonlyProperties.forEach(function (prop) {
-    Object.defineProperty(IDBRequest.prototype, prop, {
-        enumerable: true,
-        configurable: true,
-        get: function () {
-            throw new TypeError('Illegal invocation');
-        }
-    });
-});
-doneFlagGetters.forEach(function (prop) {
-    Object.defineProperty(IDBRequest.prototype, prop, {
-        enumerable: true,
-        configurable: true,
-        get: function () {
-            throw new TypeError('Illegal invocation');
-        }
-    });
-});
-listeners.forEach(function (listener) {
-    Object.defineProperty(IDBRequest.prototype, listener, {
-        enumerable: true,
-        configurable: true,
-        get: function () {
-            throw new TypeError('Illegal invocation');
-        },
-        set: function (val) {
-            throw new TypeError('Illegal invocation');
-        }
-    });
-});
+util.defineReadonlyOuterInterface(IDBRequest.prototype, readonlyProperties);
+util.defineReadonlyOuterInterface(IDBRequest.prototype, doneFlagGetters);
+util.defineOuterInterface(IDBRequest.prototype, listeners);
 Object.defineProperty(IDBRequest.prototype, 'constructor', {
     enumerable: false,
     writable: true,
@@ -126,43 +85,18 @@ Object.defineProperty(IDBOpenDBRequest.prototype, 'constructor', {
 var IDBOpenDBRequestAlias = IDBOpenDBRequest;
 IDBOpenDBRequest.__createInstance = function () {
     function IDBOpenDBRequest() {
-        var _this = this;
         IDBRequest.__super.call(this);
         this[Symbol.toStringTag] = 'IDBOpenDBRequest';
         this.__setOptions({
             legacyOutputDidListenersThrowFlag: true,
             extraProperties: ['oldVersion', 'newVersion', 'debug']
         }); // Ensure EventTarget preserves our properties
-        openListeners.forEach(function (listener) {
-            Object.defineProperty(_this, listener, {
-                configurable: true,
-                get: function () {
-                    return this['__' + listener];
-                },
-                set: function (val) {
-                    this['__' + listener] = val;
-                }
-            });
-        }, this);
-        openListeners.forEach(function (l) {
-            _this[l] = null;
-        });
+        util.defineListenerProperties(this, openListeners);
     }
     IDBOpenDBRequest.prototype = IDBOpenDBRequestAlias.prototype;
     return new IDBOpenDBRequest();
 };
-openListeners.forEach(function (listener) {
-    Object.defineProperty(IDBOpenDBRequest.prototype, listener, {
-        enumerable: true,
-        configurable: true,
-        get: function () {
-            throw new TypeError('Illegal invocation');
-        },
-        set: function (val) {
-            throw new TypeError('Illegal invocation');
-        }
-    });
-});
+util.defineOuterInterface(IDBOpenDBRequest.prototype, openListeners);
 IDBOpenDBRequest.prototype[Symbol.toStringTag] = 'IDBOpenDBRequestPrototype';
 Object.defineProperty(IDBOpenDBRequest, 'prototype', {
     writable: false
