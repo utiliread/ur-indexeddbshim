@@ -21,17 +21,17 @@ var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 var eventtargeter_1 = require("eventtargeter");
-var DOMException_1 = require("./DOMException");
-var Event_1 = require("./Event");
-var util = require("./util");
-var DOMStringList_1 = require("./DOMStringList");
-var IDBObjectStore_1 = require("./IDBObjectStore");
-var IDBTransaction_1 = require("./IDBTransaction");
+var DOMException_js_1 = require("./DOMException.js");
+var Event_js_1 = require("./Event.js");
+var util = require("./util.js");
+var DOMStringList_js_1 = require("./DOMStringList.js");
+var IDBObjectStore_js_1 = require("./IDBObjectStore.js");
+var IDBTransaction_js_1 = require("./IDBTransaction.js");
 var listeners = ['onabort', 'onclose', 'onerror', 'onversionchange'];
 var readonlyProperties = ['name', 'version', 'objectStoreNames'];
 /**
- * IDB Database Object
- * http://dvcs.w3.org/hg/IndexedDB/raw-file/tip/Overview.html#database-interface
+ * IDB Database Object.
+ * @see http://dvcs.w3.org/hg/IndexedDB/raw-file/tip/Overview.html#database-interface
  * @class
  */
 function IDBDatabase() {
@@ -43,7 +43,7 @@ IDBDatabase.__createInstance = function (db, name, oldVersion, version, storePro
         this[Symbol.toStringTag] = 'IDBDatabase';
         util.defineReadonlyProperties(this, readonlyProperties);
         this.__db = db;
-        this.__closed = false;
+        this.__closePending = false;
         this.__oldVersion = oldVersion;
         this.__version = version;
         this.__name = name;
@@ -54,7 +54,7 @@ IDBDatabase.__createInstance = function (db, name, oldVersion, version, storePro
         });
         this.__transactions = [];
         this.__objectStores = {};
-        this.__objectStoreNames = DOMStringList_1.default.__createInstance();
+        this.__objectStoreNames = DOMStringList_js_1.default.__createInstance();
         var itemCopy = {};
         var _loop_1 = function (i) {
             var item = storeProperties.rows.item(i);
@@ -63,11 +63,16 @@ IDBDatabase.__createInstance = function (db, name, oldVersion, version, storePro
             //  custom `currNum` which we don't need) onto a new object
             itemCopy.name = item.name;
             itemCopy.keyPath = JSON.parse(item.keyPath);
+            // Though `autoInc` is coming from the database as a NUMERIC
+            // type (how SQLite stores BOOLEAN set in CREATE TABLE),
+            // and should thus be parsed into a number here (0 or 1),
+            // `IDBObjectStore.__createInstance` will convert to a boolean
+            // when setting the store's `autoIncrement`.
             ['autoInc', 'indexList'].forEach(function (prop) {
                 itemCopy[prop] = JSON.parse(item[prop]);
             });
             itemCopy.idbdb = this_1;
-            var store = IDBObjectStore_1.default.__createInstance(itemCopy);
+            var store = IDBObjectStore_js_1.default.__createInstance(itemCopy);
             this_1.__objectStores[store.name] = store;
             this_1.objectStoreNames.push(store.name);
         };
@@ -82,6 +87,7 @@ IDBDatabase.__createInstance = function (db, name, oldVersion, version, storePro
 };
 IDBDatabase.prototype = eventtargeter_1.EventTargetFactory.createInstance();
 IDBDatabase.prototype[Symbol.toStringTag] = 'IDBDatabasePrototype';
+/* eslint-disable jsdoc/check-param-names */
 /**
  * Creates a new object store.
  * @param {string} storeName
@@ -89,6 +95,8 @@ IDBDatabase.prototype[Symbol.toStringTag] = 'IDBDatabasePrototype';
  * @returns {IDBObjectStore}
  */
 IDBDatabase.prototype.createObjectStore = function (storeName /* , createOptions */) {
+    /* eslint-enable jsdoc/check-param-names */
+    // eslint-disable-next-line prefer-rest-params
     var createOptions = arguments[1];
     storeName = String(storeName); // W3C test within IDBObjectStore.js seems to accept string conversion
     if (!(this instanceof IDBDatabase)) {
@@ -97,23 +105,23 @@ IDBDatabase.prototype.createObjectStore = function (storeName /* , createOptions
     if (arguments.length === 0) {
         throw new TypeError('No object store name was specified');
     }
-    IDBTransaction_1.default.__assertVersionChange(this.__versionTransaction); // this.__versionTransaction may not exist if called mistakenly by user in onsuccess
+    IDBTransaction_js_1.default.__assertVersionChange(this.__versionTransaction); // this.__versionTransaction may not exist if called mistakenly by user in onsuccess
     this.throwIfUpgradeTransactionNull();
-    IDBTransaction_1.default.__assertActive(this.__versionTransaction);
+    IDBTransaction_js_1.default.__assertActive(this.__versionTransaction);
     createOptions = __assign({}, createOptions);
     var keyPath = createOptions.keyPath;
     keyPath = keyPath === undefined ? null : util.convertToSequenceDOMString(keyPath);
     if (keyPath !== null && !util.isValidKeyPath(keyPath)) {
-        throw (0, DOMException_1.createDOMException)('SyntaxError', 'The keyPath argument contains an invalid key path.');
+        throw (0, DOMException_js_1.createDOMException)('SyntaxError', 'The keyPath argument contains an invalid key path.');
     }
     if (this.__objectStores[storeName] && !this.__objectStores[storeName].__pendingDelete) {
-        throw (0, DOMException_1.createDOMException)('ConstraintError', 'Object store "' + storeName + '" already exists in ' + this.name);
+        throw (0, DOMException_js_1.createDOMException)('ConstraintError', 'Object store "' + storeName + '" already exists in ' + this.name);
     }
     var autoInc = createOptions.autoIncrement;
     if (autoInc && (keyPath === '' || Array.isArray(keyPath))) {
-        throw (0, DOMException_1.createDOMException)('InvalidAccessError', 'With autoIncrement set, the keyPath argument must not be an array or empty string.');
+        throw (0, DOMException_js_1.createDOMException)('InvalidAccessError', 'With autoIncrement set, the keyPath argument must not be an array or empty string.');
     }
-    /** @name IDBObjectStoreProperties **/
+    /** @name IDBObjectStoreProperties */
     var storeProperties = {
         name: storeName,
         keyPath: keyPath,
@@ -121,12 +129,14 @@ IDBDatabase.prototype.createObjectStore = function (storeName /* , createOptions
         indexList: {},
         idbdb: this
     };
-    var store = IDBObjectStore_1.default.__createInstance(storeProperties, this.__versionTransaction);
-    return IDBObjectStore_1.default.__createObjectStore(this, store);
+    var store = IDBObjectStore_js_1.default.__createInstance(storeProperties, this.__versionTransaction);
+    return IDBObjectStore_js_1.default.__createObjectStore(this, store);
 };
 /**
  * Deletes an object store.
  * @param {string} storeName
+ * @throws {TypeError|DOMException}
+ * @returns {void}
  */
 IDBDatabase.prototype.deleteObjectStore = function (storeName) {
     if (!(this instanceof IDBDatabase)) {
@@ -135,24 +145,25 @@ IDBDatabase.prototype.deleteObjectStore = function (storeName) {
     if (arguments.length === 0) {
         throw new TypeError('No object store name was specified');
     }
-    IDBTransaction_1.default.__assertVersionChange(this.__versionTransaction);
+    IDBTransaction_js_1.default.__assertVersionChange(this.__versionTransaction);
     this.throwIfUpgradeTransactionNull();
-    IDBTransaction_1.default.__assertActive(this.__versionTransaction);
+    IDBTransaction_js_1.default.__assertActive(this.__versionTransaction);
     var store = this.__objectStores[storeName];
     if (!store) {
-        throw (0, DOMException_1.createDOMException)('NotFoundError', 'Object store "' + storeName + '" does not exist in ' + this.name);
+        throw (0, DOMException_js_1.createDOMException)('NotFoundError', 'Object store "' + storeName + '" does not exist in ' + this.name);
     }
-    IDBObjectStore_1.default.__deleteObjectStore(this, store);
+    IDBObjectStore_js_1.default.__deleteObjectStore(this, store);
 };
 IDBDatabase.prototype.close = function () {
     if (!(this instanceof IDBDatabase)) {
         throw new TypeError('Illegal invocation');
     }
-    this.__closed = true;
+    this.__closePending = true;
     if (this.__unblocking) {
         this.__unblocking.check();
     }
 };
+/* eslint-disable jsdoc/check-param-names */
 /**
  * Starts a new transaction.
  * @param {string|string[]} storeNames
@@ -161,9 +172,11 @@ IDBDatabase.prototype.close = function () {
  */
 IDBDatabase.prototype.transaction = function (storeNames /* , mode */) {
     var _this = this;
+    /* eslint-enable jsdoc/check-param-names */
     if (arguments.length === 0) {
         throw new TypeError('You must supply a valid `storeNames` to `IDBDatabase.transaction`');
     }
+    // eslint-disable-next-line prefer-rest-params
     var mode = arguments[1];
     storeNames = util.isIterable(storeNames)
         // Creating new array also ensures sequence is passed by value: https://heycam.github.io/webidl/#idl-sequence
@@ -182,35 +195,42 @@ IDBDatabase.prototype.transaction = function (storeNames /* , mode */) {
     // Even for readonly transactions, due to [issue 17](https://github.com/nolanlawson/node-websql/issues/17),
     //   we're not currently actually running the SQL requests in parallel.
     mode = mode || 'readonly';
-    IDBTransaction_1.default.__assertNotVersionChange(this.__versionTransaction);
-    if (this.__closed) {
-        throw (0, DOMException_1.createDOMException)('InvalidStateError', 'An attempt was made to start a new transaction on a database connection that is not open');
+    IDBTransaction_js_1.default.__assertNotVersionChange(this.__versionTransaction);
+    if (this.__closePending) {
+        throw (0, DOMException_js_1.createDOMException)('InvalidStateError', 'An attempt was made to start a new transaction on a database connection that is not open');
     }
-    var objectStoreNames = DOMStringList_1.default.__createInstance();
+    var objectStoreNames = DOMStringList_js_1.default.__createInstance();
     storeNames.forEach(function (storeName) {
         if (!_this.objectStoreNames.contains(storeName)) {
-            throw (0, DOMException_1.createDOMException)('NotFoundError', 'The "' + storeName + '" object store does not exist');
+            throw (0, DOMException_js_1.createDOMException)('NotFoundError', 'The "' + storeName + '" object store does not exist');
         }
         objectStoreNames.push(storeName);
     });
     if (storeNames.length === 0) {
-        throw (0, DOMException_1.createDOMException)('InvalidAccessError', 'No valid object store names were specified');
+        throw (0, DOMException_js_1.createDOMException)('InvalidAccessError', 'No valid object store names were specified');
     }
     if (mode !== 'readonly' && mode !== 'readwrite') {
         throw new TypeError('Invalid transaction mode: ' + mode);
     }
-    // Do not set __active flag to false yet: https://github.com/w3c/IndexedDB/issues/87
-    var trans = IDBTransaction_1.default.__createInstance(this, objectStoreNames, mode);
+    // Do not set transaction state to "inactive" yet (will be set after
+    //   timeout on creating transaction instance):
+    //   https://github.com/w3c/IndexedDB/issues/87
+    var trans = IDBTransaction_js_1.default.__createInstance(this, objectStoreNames, mode);
     this.__transactions.push(trans);
     return trans;
 };
 // See https://github.com/w3c/IndexedDB/issues/192
 IDBDatabase.prototype.throwIfUpgradeTransactionNull = function () {
     if (this.__upgradeTransaction === null) {
-        throw (0, DOMException_1.createDOMException)('InvalidStateError', 'No upgrade transaction associated with database.');
+        throw (0, DOMException_js_1.createDOMException)('InvalidStateError', 'No upgrade transaction associated with database.');
     }
 };
 // Todo __forceClose: Add tests for `__forceClose`
+/**
+ *
+ * @param {string} msg
+ * @returns {void}
+ */
 IDBDatabase.prototype.__forceClose = function (msg) {
     var me = this;
     me.close();
@@ -220,13 +240,13 @@ IDBDatabase.prototype.__forceClose = function (msg) {
             ct++;
             if (ct === me.__transactions.length) {
                 // Todo __forceClose: unblock any pending `upgradeneeded` or `deleteDatabase` calls
-                var evt_1 = (0, Event_1.createEvent)('close');
+                var evt_1 = (0, Event_js_1.createEvent)('close');
                 setTimeout(function () {
                     me.dispatchEvent(evt_1);
                 });
             }
         };
-        trans.__abortTransaction((0, DOMException_1.createDOMException)('AbortError', 'The connection was force-closed: ' + (msg || '')));
+        trans.__abortTransaction((0, DOMException_js_1.createDOMException)('AbortError', 'The connection was force-closed: ' + (msg || '')));
     });
 };
 util.defineOuterInterface(IDBDatabase.prototype, listeners);

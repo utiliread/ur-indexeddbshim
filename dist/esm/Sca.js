@@ -1,5 +1,5 @@
 import Typeson from 'typeson-registry';
-import { createDOMException, ShimDOMException } from './DOMException';
+import { createDOMException, ShimDOMException } from './DOMException.js';
 // See: http://stackoverflow.com/questions/42170826/categories-for-rejection-by-the-structured-cloning-algorithm
 var typeson = new Typeson().register(Typeson.presets.structuredCloningThrowing);
 function register(func) {
@@ -11,6 +11,7 @@ function register(func) {
 function encode(obj, func) {
     var ret;
     try {
+        // eslint-disable-next-line node/no-sync
         ret = typeson.stringifySync(obj);
     }
     catch (err) {

@@ -1,16 +1,20 @@
-import { createDOMException } from './DOMException';
-import * as Key from './Key';
-import * as util from './util';
+import { createDOMException } from './DOMException.js';
+import * as Key from './Key.js';
+import * as util from './util.js';
 var readonlyProperties = ['lower', 'upper', 'lowerOpen', 'upperOpen'];
+/* eslint-disable jsdoc/check-param-names */
 /**
- * The IndexedDB KeyRange object
- * http://dvcs.w3.org/hg/IndexedDB/raw-file/tip/Overview.html#dfn-key-range
+ * The IndexedDB KeyRange object.
+ * @see http://dvcs.w3.org/hg/IndexedDB/raw-file/tip/Overview.html#dfn-key-range
  * @param {Object} lower
  * @param {Object} upper
  * @param {Object} lowerOpen
  * @param {Object} upperOpen
+ * @throws {TypeError}
+ * @class
  */
 function IDBKeyRange() {
+    /* eslint-enable jsdoc/check-param-names */
     throw new TypeError('Illegal constructor');
 }
 var IDBKeyRangeAlias = IDBKeyRange;
@@ -63,18 +67,21 @@ IDBKeyRange.lowerBound = function (value /*, open */) {
     if (!arguments.length) {
         throw new TypeError('IDBKeyRange.lowerBound requires a value argument');
     }
+    // eslint-disable-next-line prefer-rest-params
     return IDBKeyRange.__createInstance(value, undefined, arguments[1], true);
 };
 IDBKeyRange.upperBound = function (value /*, open */) {
     if (!arguments.length) {
         throw new TypeError('IDBKeyRange.upperBound requires a value argument');
     }
+    // eslint-disable-next-line prefer-rest-params
     return IDBKeyRange.__createInstance(undefined, value, true, arguments[1]);
 };
 IDBKeyRange.bound = function (lower, upper /* , lowerOpen, upperOpen */) {
     if (arguments.length <= 1) {
         throw new TypeError('IDBKeyRange.bound requires lower and upper arguments');
     }
+    // eslint-disable-next-line prefer-rest-params
     return IDBKeyRange.__createInstance(lower, upper, arguments[2], arguments[3]);
 };
 IDBKeyRange.prototype[Symbol.toStringTag] = 'IDBKeyRangePrototype';

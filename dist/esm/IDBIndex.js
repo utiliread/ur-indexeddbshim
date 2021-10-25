@@ -8,24 +8,26 @@ var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
     return to.concat(ar || Array.prototype.slice.call(from));
 };
 import SyncPromise from 'sync-promise';
-import { createDOMException } from './DOMException';
-import { IDBCursor, IDBCursorWithValue } from './IDBCursor';
-import * as util from './util';
-import * as Key from './Key';
-import { setSQLForKeyRange, IDBKeyRange, convertValueToKeyRange } from './IDBKeyRange';
-import IDBTransaction from './IDBTransaction';
-import * as Sca from './Sca';
-import CFG from './CFG';
-import IDBObjectStore from './IDBObjectStore';
+import { createDOMException } from './DOMException.js';
+import { IDBCursor, IDBCursorWithValue } from './IDBCursor.js';
+import * as util from './util.js';
+import * as Key from './Key.js';
+import { setSQLForKeyRange, IDBKeyRange, convertValueToKeyRange } from './IDBKeyRange.js';
+import IDBTransaction from './IDBTransaction.js';
+import * as Sca from './Sca.js';
+import CFG from './CFG.js';
+import IDBObjectStore from './IDBObjectStore.js';
 var readonlyProperties = ['objectStore', 'keyPath', 'multiEntry', 'unique'];
+/* eslint-disable jsdoc/check-param-names */
 /**
- * IDB Index
- * http://www.w3.org/TR/IndexedDB/#idl-def-IDBIndex
+ * IDB Index.
+ * @see http://www.w3.org/TR/IndexedDB/#idl-def-IDBIndex
  * @param {IDBObjectStore} store
  * @param {IDBIndexProperties} indexProperties
  * @class
  */
 function IDBIndex() {
+    /* eslint-enable jsdoc/check-param-names */
     throw new TypeError('Illegal constructor');
 }
 var IDBIndexAlias = IDBIndex;
@@ -105,6 +107,7 @@ IDBIndex.__invalidStateIfDeleted = function (index, msg) {
  * @param {IDBIndex} index
  * @param {IDBObjectStore} store
  * @protected
+ * @returns {IDBIndex}
  */
 IDBIndex.__clone = function (index, store) {
     var idx = IDBIndex.__createInstance(store, {
@@ -124,7 +127,7 @@ IDBIndex.__clone = function (index, store) {
  * Creates a new index on an object store.
  * @param {IDBObjectStore} store
  * @param {IDBIndex} index
- * @returns {IDBIndex}
+ * @returns {void}
  * @protected
  */
 IDBIndex.__createIndex = function (store, index) {
@@ -234,6 +237,7 @@ IDBIndex.__createIndex = function (store, index) {
  * @param {IDBObjectStore} store
  * @param {IDBIndex} index
  * @protected
+ * @returns {void}
  */
 IDBIndex.__deleteIndex = function (store, index) {
     // Remove the index from the IDBObjectStore
@@ -277,6 +281,7 @@ IDBIndex.__deleteIndex = function (store, index) {
  * @param {object} tx
  * @param {function} success
  * @param {function} failure
+ * @returns {void}
  */
 IDBIndex.__updateIndexList = function (store, tx, success, failure) {
     var indexList = {};
@@ -299,7 +304,7 @@ IDBIndex.__updateIndexList = function (store, tx, success, failure) {
     }, failure);
 };
 /**
- * Retrieves index data for the given key
+ * Retrieves index data for the given key.
  * @param {*|IDBKeyRange} range
  * @param {string} opType
  * @param {boolean} nullDisallowed
@@ -330,6 +335,7 @@ IDBIndex.prototype.__fetchIndexData = function (range, opType, nullDisallowed, c
         executeFetchIndexData.apply(void 0, __spreadArray(__spreadArray([count], fetchArgs, false), args, false));
     }, undefined, me);
 };
+/* eslint-disable jsdoc/check-param-names */
 /**
  * Opens a cursor over the given key range.
  * @param {*|IDBKeyRange} query
@@ -337,12 +343,15 @@ IDBIndex.prototype.__fetchIndexData = function (range, opType, nullDisallowed, c
  * @returns {IDBRequest}
  */
 IDBIndex.prototype.openCursor = function ( /* query, direction */) {
+    /* eslint-enable jsdoc/check-param-names */
     var me = this;
+    // eslint-disable-next-line prefer-rest-params
     var query = arguments[0], direction = arguments[1];
     var cursor = IDBCursorWithValue.__createInstance(query, direction, me.objectStore, me, util.escapeIndexNameForSQLKeyColumn(me.name), 'value');
     me.__objectStore.__cursors.push(cursor);
-    return cursor.__req;
+    return cursor.__request;
 };
+/* eslint-disable jsdoc/check-param-names */
 /**
  * Opens a cursor over the given key range.  The cursor only includes key values, not data.
  * @param {*|IDBKeyRange} query
@@ -350,11 +359,13 @@ IDBIndex.prototype.openCursor = function ( /* query, direction */) {
  * @returns {IDBRequest}
  */
 IDBIndex.prototype.openKeyCursor = function ( /* query, direction */) {
+    /* eslint-enable jsdoc/check-param-names */
     var me = this;
+    // eslint-disable-next-line prefer-rest-params
     var query = arguments[0], direction = arguments[1];
     var cursor = IDBCursor.__createInstance(query, direction, me.objectStore, me, util.escapeIndexNameForSQLKeyColumn(me.name), 'key');
     me.__objectStore.__cursors.push(cursor);
-    return cursor.__req;
+    return cursor.__request;
 };
 IDBIndex.prototype.get = function (query) {
     if (!arguments.length) { // Per https://heycam.github.io/webidl/
@@ -369,15 +380,18 @@ IDBIndex.prototype.getKey = function (query) {
     return this.__fetchIndexData(query, 'key', true);
 };
 IDBIndex.prototype.getAll = function ( /* query, count */) {
+    // eslint-disable-next-line prefer-rest-params
     var query = arguments[0], count = arguments[1];
     return this.__fetchIndexData(query, 'value', false, count);
 };
 IDBIndex.prototype.getAllKeys = function ( /* query, count */) {
+    // eslint-disable-next-line prefer-rest-params
     var query = arguments[0], count = arguments[1];
     return this.__fetchIndexData(query, 'key', false, count);
 };
 IDBIndex.prototype.count = function ( /* query */) {
     var me = this;
+    // eslint-disable-next-line prefer-rest-params
     var query = arguments[0];
     // With the exception of needing to check whether the index has been
     //  deleted, we could, for greater spec parity (if not accuracy),
@@ -385,7 +399,7 @@ IDBIndex.prototype.count = function ( /* query */) {
     //  `return me.__objectStore.count(query);`
     if (util.instanceOf(query, IDBKeyRange)) { // Todo: Do we need this block?
         // We don't need to add to cursors array since has the count parameter which won't cache
-        return IDBCursorWithValue.__createInstance(query, 'next', me.objectStore, me, util.escapeIndexNameForSQLKeyColumn(me.name), 'value', true).__req;
+        return IDBCursorWithValue.__createInstance(query, 'next', me.objectStore, me, util.escapeIndexNameForSQLKeyColumn(me.name), 'value', true).__request;
     }
     return me.__fetchIndexData(query, 'count', false);
 };
@@ -500,12 +514,16 @@ function executeFetchIndexData(count, unboundedDisallowed, index, hasKey, range,
     tx.executeSql(sql.join(' '), sqlValues, function (tx, data) {
         var records = [];
         var recordCount = 0;
-        var decode = isCount ? function () { } : (opType === 'key' ? function (record) {
-            // Key.convertValueToKey(record.key); // Already validated before storage
-            return Key.decode(util.unescapeSQLiteResponse(record.key));
-        } : function (record) {
-            return Sca.decode(util.unescapeSQLiteResponse(record.value));
-        });
+        var decode = isCount
+            ? function () { }
+            : (opType === 'key'
+                ? function (record) {
+                    // Key.convertValueToKey(record.key); // Already validated before storage
+                    return Key.decode(util.unescapeSQLiteResponse(record.key));
+                }
+                : function (record) {
+                    return Sca.decode(util.unescapeSQLiteResponse(record.value));
+                });
         if (index.multiEntry) {
             var escapedIndexNameForKeyCol = util.escapeIndexNameForSQLKeyColumn(index.name);
             var encodedKey = Key.encode(range, index.multiEntry);

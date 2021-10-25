@@ -1,5 +1,5 @@
-import { ShimEvent } from './Event';
-import * as util from './util';
+import { ShimEvent } from './Event.js';
+import * as util from './util.js';
 var readonlyProperties = ['oldVersion', 'newVersion'];
 // Babel apparently having a problem adding `hasInstance` to a class, so we are redefining as a function
 function IDBVersionChangeEvent(type /* , eventInitDict */) {
@@ -8,6 +8,7 @@ function IDBVersionChangeEvent(type /* , eventInitDict */) {
     this.toString = function () {
         return '[object IDBVersionChangeEvent]';
     };
+    // eslint-disable-next-line prefer-rest-params
     this.__eventInitDict = arguments[1] || {};
 }
 IDBVersionChangeEvent.prototype = Object.create(ShimEvent.prototype);

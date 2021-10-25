@@ -11,24 +11,26 @@ var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = exports.IDBIndex = exports.executeFetchIndexData = exports.buildFetchIndexDataSQL = void 0;
 var sync_promise_1 = require("sync-promise");
-var DOMException_1 = require("./DOMException");
-var IDBCursor_1 = require("./IDBCursor");
-var util = require("./util");
-var Key = require("./Key");
-var IDBKeyRange_1 = require("./IDBKeyRange");
-var IDBTransaction_1 = require("./IDBTransaction");
-var Sca = require("./Sca");
-var CFG_1 = require("./CFG");
-var IDBObjectStore_1 = require("./IDBObjectStore");
+var DOMException_js_1 = require("./DOMException.js");
+var IDBCursor_js_1 = require("./IDBCursor.js");
+var util = require("./util.js");
+var Key = require("./Key.js");
+var IDBKeyRange_js_1 = require("./IDBKeyRange.js");
+var IDBTransaction_js_1 = require("./IDBTransaction.js");
+var Sca = require("./Sca.js");
+var CFG_js_1 = require("./CFG.js");
+var IDBObjectStore_js_1 = require("./IDBObjectStore.js");
 var readonlyProperties = ['objectStore', 'keyPath', 'multiEntry', 'unique'];
+/* eslint-disable jsdoc/check-param-names */
 /**
- * IDB Index
- * http://www.w3.org/TR/IndexedDB/#idl-def-IDBIndex
+ * IDB Index.
+ * @see http://www.w3.org/TR/IndexedDB/#idl-def-IDBIndex
  * @param {IDBObjectStore} store
  * @param {IDBIndexProperties} indexProperties
  * @class
  */
 function IDBIndex() {
+    /* eslint-enable jsdoc/check-param-names */
     throw new TypeError('Illegal constructor');
 }
 exports.IDBIndex = IDBIndex;
@@ -62,16 +64,16 @@ IDBIndex.__createInstance = function (store, indexProperties) {
                 var me = this;
                 newName = util.convertToDOMString(newName);
                 var oldName = me.name;
-                IDBTransaction_1.default.__assertVersionChange(me.objectStore.transaction);
-                IDBTransaction_1.default.__assertActive(me.objectStore.transaction);
+                IDBTransaction_js_1.default.__assertVersionChange(me.objectStore.transaction);
+                IDBTransaction_js_1.default.__assertActive(me.objectStore.transaction);
                 IDBIndexAlias.__invalidStateIfDeleted(me);
-                IDBObjectStore_1.default.__invalidStateIfDeleted(me);
+                IDBObjectStore_js_1.default.__invalidStateIfDeleted(me);
                 if (newName === oldName) {
                     return;
                 }
                 if (me.objectStore.__indexes[newName] && !me.objectStore.__indexes[newName].__deleted &&
                     !me.objectStore.__indexes[newName].__pendingDelete) {
-                    throw (0, DOMException_1.createDOMException)('ConstraintError', 'Index "' + newName + '" already exists on ' + me.objectStore.__currentName);
+                    throw (0, DOMException_js_1.createDOMException)('ConstraintError', 'Index "' + newName + '" already exists on ' + me.objectStore.__currentName);
                 }
                 me.__name = newName;
                 var objectStore = me.objectStore;
@@ -102,7 +104,7 @@ IDBIndex.__createInstance = function (store, indexProperties) {
 };
 IDBIndex.__invalidStateIfDeleted = function (index, msg) {
     if (index.__deleted || index.__pendingDelete || (index.__pendingCreate && index.objectStore.transaction && index.objectStore.transaction.__errored)) {
-        throw (0, DOMException_1.createDOMException)('InvalidStateError', msg || 'This index has been deleted');
+        throw (0, DOMException_js_1.createDOMException)('InvalidStateError', msg || 'This index has been deleted');
     }
 };
 /**
@@ -110,6 +112,7 @@ IDBIndex.__invalidStateIfDeleted = function (index, msg) {
  * @param {IDBIndex} index
  * @param {IDBObjectStore} store
  * @protected
+ * @returns {IDBIndex}
  */
 IDBIndex.__clone = function (index, store) {
     var idx = IDBIndex.__createInstance(store, {
@@ -129,7 +132,7 @@ IDBIndex.__clone = function (index, store) {
  * Creates a new index on an object store.
  * @param {IDBObjectStore} store
  * @param {IDBIndex} index
- * @returns {IDBIndex}
+ * @returns {void}
  * @protected
  */
 IDBIndex.__createIndex = function (store, index) {
@@ -154,14 +157,14 @@ IDBIndex.__createIndex = function (store, index) {
         var columnExists = idx && (idx.__deleted || idx.__recreated); // This check must occur here rather than earlier as properties may not have been set yet otherwise
         var indexValues = {};
         function error(tx, err) {
-            failure((0, DOMException_1.createDOMException)('UnknownError', 'Could not create index "' + indexName + '"' + err.code + '::' + err.message, err));
+            failure((0, DOMException_js_1.createDOMException)('UnknownError', 'Could not create index "' + indexName + '"' + err.code + '::' + err.message, err));
         }
         function applyIndex(tx) {
             // Update the object store's index list
             IDBIndex.__updateIndexList(store, tx, function () {
                 // Add index entries for all existing records
                 tx.executeSql('SELECT "key", "value" FROM ' + util.escapeStoreNameForSQL(storeName), [], function (tx, data) {
-                    CFG_1.default.DEBUG && console.log('Adding existing ' + storeName + ' records to the ' + indexName + ' index');
+                    CFG_js_1.default.DEBUG && console.log('Adding existing ' + storeName + ' records to the ' + indexName + ' index');
                     addIndexEntry(0);
                     function addIndexEntry(i) {
                         if (i < data.rows.length) {
@@ -175,7 +178,7 @@ IDBIndex.__createIndex = function (store, index) {
                                 if (index.unique) {
                                     if (indexValues[indexKey]) {
                                         indexValues = {};
-                                        failure((0, DOMException_1.createDOMException)('ConstraintError', 'Duplicate values already exist within the store'));
+                                        failure((0, DOMException_js_1.createDOMException)('ConstraintError', 'Duplicate values already exist within the store'));
                                         return;
                                     }
                                     indexValues[indexKey] = true;
@@ -209,7 +212,7 @@ IDBIndex.__createIndex = function (store, index) {
         var escapedStoreNameSQL = util.escapeStoreNameForSQL(storeName);
         var escapedIndexNameSQL = util.escapeIndexNameForSQL(index.name);
         function addIndexSQL(tx) {
-            if (!CFG_1.default.useSQLiteIndexes) {
+            if (!CFG_js_1.default.useSQLiteIndexes) {
                 applyIndex(tx);
                 return;
             }
@@ -229,7 +232,7 @@ IDBIndex.__createIndex = function (store, index) {
         else {
             // For a new index, add a new column to the object store, then apply the index
             var sql = ['ALTER TABLE', escapedStoreNameSQL, 'ADD', escapedIndexNameSQL, 'BLOB'].join(' ');
-            CFG_1.default.DEBUG && console.log(sql);
+            CFG_js_1.default.DEBUG && console.log(sql);
             tx.executeSql(sql, [], addIndexSQL, error);
         }
     }, undefined, store);
@@ -239,6 +242,7 @@ IDBIndex.__createIndex = function (store, index) {
  * @param {IDBObjectStore} store
  * @param {IDBIndex} index
  * @protected
+ * @returns {void}
  */
 IDBIndex.__deleteIndex = function (store, index) {
     // Remove the index from the IDBObjectStore
@@ -252,7 +256,7 @@ IDBIndex.__deleteIndex = function (store, index) {
     var transaction = store.transaction;
     transaction.__addNonRequestToTransactionQueue(function deleteIndex(tx, args, success, failure) {
         function error(tx, err) {
-            failure((0, DOMException_1.createDOMException)('UnknownError', 'Could not delete index "' + index.name + '"', err));
+            failure((0, DOMException_js_1.createDOMException)('UnknownError', 'Could not delete index "' + index.name + '"', err));
         }
         function finishDeleteIndex() {
             // Update the object store's index list
@@ -267,7 +271,7 @@ IDBIndex.__deleteIndex = function (store, index) {
                 success(store);
             }, error);
         }
-        if (!CFG_1.default.useSQLiteIndexes) {
+        if (!CFG_js_1.default.useSQLiteIndexes) {
             finishDeleteIndex();
             return;
         }
@@ -282,6 +286,7 @@ IDBIndex.__deleteIndex = function (store, index) {
  * @param {object} tx
  * @param {function} success
  * @param {function} failure
+ * @returns {void}
  */
 IDBIndex.__updateIndexList = function (store, tx, success, failure) {
     var indexList = {};
@@ -298,13 +303,13 @@ IDBIndex.__updateIndexList = function (store, tx, success, failure) {
             deleted: Boolean(idx.deleted)
         };
     }
-    CFG_1.default.DEBUG && console.log('Updating the index list for ' + store.__currentName, indexList);
+    CFG_js_1.default.DEBUG && console.log('Updating the index list for ' + store.__currentName, indexList);
     tx.executeSql('UPDATE __sys__ SET "indexList" = ? WHERE "name" = ?', [JSON.stringify(indexList), util.escapeSQLiteStatement(store.__currentName)], function () {
         success(store);
     }, failure);
 };
 /**
- * Retrieves index data for the given key
+ * Retrieves index data for the given key.
  * @param {*|IDBKeyRange} range
  * @param {string} opType
  * @param {boolean} nullDisallowed
@@ -318,13 +323,13 @@ IDBIndex.prototype.__fetchIndexData = function (range, opType, nullDisallowed, c
         count = util.enforceRange(count, 'unsigned long');
     }
     IDBIndex.__invalidStateIfDeleted(me);
-    IDBObjectStore_1.default.__invalidStateIfDeleted(me.objectStore);
+    IDBObjectStore_js_1.default.__invalidStateIfDeleted(me.objectStore);
     if (me.objectStore.__deleted) {
-        throw (0, DOMException_1.createDOMException)('InvalidStateError', "This index's object store has been deleted");
+        throw (0, DOMException_js_1.createDOMException)('InvalidStateError', "This index's object store has been deleted");
     }
-    IDBTransaction_1.default.__assertActive(me.objectStore.transaction);
+    IDBTransaction_js_1.default.__assertActive(me.objectStore.transaction);
     if (nullDisallowed && util.isNullish(range)) {
-        throw (0, DOMException_1.createDOMException)('DataError', 'No key or range was specified');
+        throw (0, DOMException_js_1.createDOMException)('DataError', 'No key or range was specified');
     }
     var fetchArgs = buildFetchIndexDataSQL(nullDisallowed, me, range, opType, false);
     return me.objectStore.transaction.__addToTransactionQueue(function () {
@@ -335,6 +340,7 @@ IDBIndex.prototype.__fetchIndexData = function (range, opType, nullDisallowed, c
         executeFetchIndexData.apply(void 0, __spreadArray(__spreadArray([count], fetchArgs, false), args, false));
     }, undefined, me);
 };
+/* eslint-disable jsdoc/check-param-names */
 /**
  * Opens a cursor over the given key range.
  * @param {*|IDBKeyRange} query
@@ -342,12 +348,15 @@ IDBIndex.prototype.__fetchIndexData = function (range, opType, nullDisallowed, c
  * @returns {IDBRequest}
  */
 IDBIndex.prototype.openCursor = function ( /* query, direction */) {
+    /* eslint-enable jsdoc/check-param-names */
     var me = this;
+    // eslint-disable-next-line prefer-rest-params
     var query = arguments[0], direction = arguments[1];
-    var cursor = IDBCursor_1.IDBCursorWithValue.__createInstance(query, direction, me.objectStore, me, util.escapeIndexNameForSQLKeyColumn(me.name), 'value');
+    var cursor = IDBCursor_js_1.IDBCursorWithValue.__createInstance(query, direction, me.objectStore, me, util.escapeIndexNameForSQLKeyColumn(me.name), 'value');
     me.__objectStore.__cursors.push(cursor);
-    return cursor.__req;
+    return cursor.__request;
 };
+/* eslint-disable jsdoc/check-param-names */
 /**
  * Opens a cursor over the given key range.  The cursor only includes key values, not data.
  * @param {*|IDBKeyRange} query
@@ -355,11 +364,13 @@ IDBIndex.prototype.openCursor = function ( /* query, direction */) {
  * @returns {IDBRequest}
  */
 IDBIndex.prototype.openKeyCursor = function ( /* query, direction */) {
+    /* eslint-enable jsdoc/check-param-names */
     var me = this;
+    // eslint-disable-next-line prefer-rest-params
     var query = arguments[0], direction = arguments[1];
-    var cursor = IDBCursor_1.IDBCursor.__createInstance(query, direction, me.objectStore, me, util.escapeIndexNameForSQLKeyColumn(me.name), 'key');
+    var cursor = IDBCursor_js_1.IDBCursor.__createInstance(query, direction, me.objectStore, me, util.escapeIndexNameForSQLKeyColumn(me.name), 'key');
     me.__objectStore.__cursors.push(cursor);
-    return cursor.__req;
+    return cursor.__request;
 };
 IDBIndex.prototype.get = function (query) {
     if (!arguments.length) { // Per https://heycam.github.io/webidl/
@@ -374,23 +385,26 @@ IDBIndex.prototype.getKey = function (query) {
     return this.__fetchIndexData(query, 'key', true);
 };
 IDBIndex.prototype.getAll = function ( /* query, count */) {
+    // eslint-disable-next-line prefer-rest-params
     var query = arguments[0], count = arguments[1];
     return this.__fetchIndexData(query, 'value', false, count);
 };
 IDBIndex.prototype.getAllKeys = function ( /* query, count */) {
+    // eslint-disable-next-line prefer-rest-params
     var query = arguments[0], count = arguments[1];
     return this.__fetchIndexData(query, 'key', false, count);
 };
 IDBIndex.prototype.count = function ( /* query */) {
     var me = this;
+    // eslint-disable-next-line prefer-rest-params
     var query = arguments[0];
     // With the exception of needing to check whether the index has been
     //  deleted, we could, for greater spec parity (if not accuracy),
     //  just call:
     //  `return me.__objectStore.count(query);`
-    if (util.instanceOf(query, IDBKeyRange_1.IDBKeyRange)) { // Todo: Do we need this block?
+    if (util.instanceOf(query, IDBKeyRange_js_1.IDBKeyRange)) { // Todo: Do we need this block?
         // We don't need to add to cursors array since has the count parameter which won't cache
-        return IDBCursor_1.IDBCursorWithValue.__createInstance(query, 'next', me.objectStore, me, util.escapeIndexNameForSQLKeyColumn(me.name), 'value', true).__req;
+        return IDBCursor_js_1.IDBCursorWithValue.__createInstance(query, 'next', me.objectStore, me, util.escapeIndexNameForSQLKeyColumn(me.name), 'value', true).__request;
     }
     return me.__fetchIndexData(query, 'count', false);
 };
@@ -424,20 +438,20 @@ IDBIndex.prototype.__renameIndex = function (store, oldName, newName, colInfoToP
         // This approach has the advantage of auto-deleting indexes via the DROP TABLE
         var sql = 'CREATE TABLE ' + escapedTmpStoreNameSQL +
             '(' + listColInfoToPreserve + escapedNewIndexNameSQL + ' ' + newNameType + ')';
-        CFG_1.default.DEBUG && console.log(sql);
+        CFG_js_1.default.DEBUG && console.log(sql);
         tx.executeSql(sql, [], function () {
             var sql = 'INSERT INTO ' + escapedTmpStoreNameSQL + '(' +
                 listColsToPreserve + escapedNewIndexNameSQL +
                 ') SELECT ' + listColsToPreserve + util.escapeIndexNameForSQL(oldName) + ' FROM ' + escapedStoreNameSQL;
-            CFG_1.default.DEBUG && console.log(sql);
+            CFG_js_1.default.DEBUG && console.log(sql);
             tx.executeSql(sql, [], function () {
                 var sql = 'DROP TABLE ' + escapedStoreNameSQL;
-                CFG_1.default.DEBUG && console.log(sql);
+                CFG_js_1.default.DEBUG && console.log(sql);
                 tx.executeSql(sql, [], function () {
                     var sql = 'ALTER TABLE ' + escapedTmpStoreNameSQL + ' RENAME TO ' + escapedStoreNameSQL;
-                    CFG_1.default.DEBUG && console.log(sql);
+                    CFG_js_1.default.DEBUG && console.log(sql);
                     tx.executeSql(sql, [], function (tx, data) {
-                        if (!CFG_1.default.useSQLiteIndexes) {
+                        if (!CFG_js_1.default.useSQLiteIndexes) {
                             finish();
                             return;
                         }
@@ -450,7 +464,7 @@ IDBIndex.prototype.__renameIndex = function (store, oldName, newName, colInfoToP
                             // tx.executeSql(sql, [], function () {
                             var sql = 'CREATE INDEX ' +
                                 escapedIndexToRecreate + ' ON ' + escapedStoreNameSQL + '(' + escapedIndexNameSQL + ')';
-                            CFG_1.default.DEBUG && console.log(sql);
+                            CFG_js_1.default.DEBUG && console.log(sql);
                             tx.executeSql(sql, [], resolve, function (tx, err) {
                                 reject(err);
                             });
@@ -462,11 +476,11 @@ IDBIndex.prototype.__renameIndex = function (store, oldName, newName, colInfoToP
                             var escapedIndexToRecreate = util.sqlQuote('sk_' + escapedStoreNameSQL.slice(1, -1));
                             // Chrome erring here if not dropped first; Node does not
                             var sql = 'DROP INDEX IF EXISTS ' + escapedIndexToRecreate;
-                            CFG_1.default.DEBUG && console.log(sql);
+                            CFG_js_1.default.DEBUG && console.log(sql);
                             tx.executeSql(sql, [], function () {
                                 var sql = 'CREATE INDEX ' + escapedIndexToRecreate +
                                     ' ON ' + escapedStoreNameSQL + '("key")';
-                                CFG_1.default.DEBUG && console.log(sql);
+                                CFG_js_1.default.DEBUG && console.log(sql);
                                 tx.executeSql(sql, [], resolve, function (tx, err) {
                                     reject(err);
                                 });
@@ -501,16 +515,20 @@ function executeFetchIndexData(count, unboundedDisallowed, index, hasKey, range,
         sql.push('LIMIT', count);
     }
     var isCount = opType === 'count';
-    CFG_1.default.DEBUG && console.log('Trying to fetch data for Index', sql.join(' '), sqlValues);
+    CFG_js_1.default.DEBUG && console.log('Trying to fetch data for Index', sql.join(' '), sqlValues);
     tx.executeSql(sql.join(' '), sqlValues, function (tx, data) {
         var records = [];
         var recordCount = 0;
-        var decode = isCount ? function () { } : (opType === 'key' ? function (record) {
-            // Key.convertValueToKey(record.key); // Already validated before storage
-            return Key.decode(util.unescapeSQLiteResponse(record.key));
-        } : function (record) {
-            return Sca.decode(util.unescapeSQLiteResponse(record.value));
-        });
+        var decode = isCount
+            ? function () { }
+            : (opType === 'key'
+                ? function (record) {
+                    // Key.convertValueToKey(record.key); // Already validated before storage
+                    return Key.decode(util.unescapeSQLiteResponse(record.key));
+                }
+                : function (record) {
+                    return Sca.decode(util.unescapeSQLiteResponse(record.value));
+                });
         if (index.multiEntry) {
             var escapedIndexNameForKeyCol = util.escapeIndexNameForSQLKeyColumn(index.name);
             var encodedKey = Key.encode(range, index.multiEntry);
@@ -588,8 +606,8 @@ function buildFetchIndexDataSQL(nullDisallowed, index, range, opType, multiCheck
             sqlValues.push('%' + util.sqlLIKEEscape(Key.encode(range, index.multiEntry)) + '%');
         }
         else {
-            var convertedRange = (0, IDBKeyRange_1.convertValueToKeyRange)(range, nullDisallowed);
-            (0, IDBKeyRange_1.setSQLForKeyRange)(convertedRange, util.escapeIndexNameForSQL(index.name), sql, sqlValues, true, false);
+            var convertedRange = (0, IDBKeyRange_js_1.convertValueToKeyRange)(range, nullDisallowed);
+            (0, IDBKeyRange_js_1.setSQLForKeyRange)(convertedRange, util.escapeIndexNameForSQL(index.name), sql, sqlValues, true, false);
         }
     }
     return [nullDisallowed, index, hasRange, range, opType, multiChecks, sql, sqlValues];

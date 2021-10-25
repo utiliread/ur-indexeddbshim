@@ -2,7 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.register = exports.clone = exports.decode = exports.encode = void 0;
 var typeson_registry_1 = require("typeson-registry");
-var DOMException_1 = require("./DOMException");
+var DOMException_js_1 = require("./DOMException.js");
 // See: http://stackoverflow.com/questions/42170826/categories-for-rejection-by-the-structured-cloning-algorithm
 var typeson = new typeson_registry_1.default().register(typeson_registry_1.default.presets.structuredCloningThrowing);
 function register(func) {
@@ -15,6 +15,7 @@ exports.register = register;
 function encode(obj, func) {
     var ret;
     try {
+        // eslint-disable-next-line node/no-sync
         ret = typeson.stringifySync(obj);
     }
     catch (err) {
@@ -24,8 +25,8 @@ function encode(obj, func) {
             //   supporting environment (e.g., the browser) where `ShimDOMException` is
             //   an alias for `DOMException`; if typeson-registry ever uses our shim
             //   to throw, we can use this condition alone.
-            typeson_registry_1.default.hasConstructorOf(err, DOMException_1.ShimDOMException)) {
-            throw (0, DOMException_1.createDOMException)('DataCloneError', 'The object cannot be cloned.');
+            typeson_registry_1.default.hasConstructorOf(err, DOMException_js_1.ShimDOMException)) {
+            throw (0, DOMException_js_1.createDOMException)('DataCloneError', 'The object cannot be cloned.');
         }
         // We should rethrow non-cloning exceptions like from
         //  throwing getters (as in the W3C test, key-conversion-exceptions.htm)

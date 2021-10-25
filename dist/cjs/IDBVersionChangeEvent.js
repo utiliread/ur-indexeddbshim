@@ -1,18 +1,19 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-var Event_1 = require("./Event");
-var util = require("./util");
+var Event_js_1 = require("./Event.js");
+var util = require("./util.js");
 var readonlyProperties = ['oldVersion', 'newVersion'];
 // Babel apparently having a problem adding `hasInstance` to a class, so we are redefining as a function
 function IDBVersionChangeEvent(type /* , eventInitDict */) {
-    Event_1.ShimEvent.call(this, type);
+    Event_js_1.ShimEvent.call(this, type);
     this[Symbol.toStringTag] = 'IDBVersionChangeEvent';
     this.toString = function () {
         return '[object IDBVersionChangeEvent]';
     };
+    // eslint-disable-next-line prefer-rest-params
     this.__eventInitDict = arguments[1] || {};
 }
-IDBVersionChangeEvent.prototype = Object.create(Event_1.ShimEvent.prototype);
+IDBVersionChangeEvent.prototype = Object.create(Event_js_1.ShimEvent.prototype);
 IDBVersionChangeEvent.prototype[Symbol.toStringTag] = 'IDBVersionChangeEventPrototype';
 readonlyProperties.forEach(function (prop) {
     var _a;

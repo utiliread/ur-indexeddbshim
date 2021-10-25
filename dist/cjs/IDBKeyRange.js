@@ -1,19 +1,23 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = exports.convertValueToKeyRange = exports.IDBKeyRange = exports.setSQLForKeyRange = void 0;
-var DOMException_1 = require("./DOMException");
-var Key = require("./Key");
-var util = require("./util");
+var DOMException_js_1 = require("./DOMException.js");
+var Key = require("./Key.js");
+var util = require("./util.js");
 var readonlyProperties = ['lower', 'upper', 'lowerOpen', 'upperOpen'];
+/* eslint-disable jsdoc/check-param-names */
 /**
- * The IndexedDB KeyRange object
- * http://dvcs.w3.org/hg/IndexedDB/raw-file/tip/Overview.html#dfn-key-range
+ * The IndexedDB KeyRange object.
+ * @see http://dvcs.w3.org/hg/IndexedDB/raw-file/tip/Overview.html#dfn-key-range
  * @param {Object} lower
  * @param {Object} upper
  * @param {Object} lowerOpen
  * @param {Object} upperOpen
+ * @throws {TypeError}
+ * @class
  */
 function IDBKeyRange() {
+    /* eslint-enable jsdoc/check-param-names */
     throw new TypeError('Illegal constructor');
 }
 exports.IDBKeyRange = IDBKeyRange;
@@ -23,7 +27,7 @@ IDBKeyRange.__createInstance = function (lower, upper, lowerOpen, upperOpen) {
     function IDBKeyRange() {
         this[Symbol.toStringTag] = 'IDBKeyRange';
         if (lower === undefined && upper === undefined) {
-            throw (0, DOMException_1.createDOMException)('DataError', 'Both arguments to the key range method cannot be undefined');
+            throw (0, DOMException_js_1.createDOMException)('DataError', 'Both arguments to the key range method cannot be undefined');
         }
         var lowerConverted, upperConverted;
         if (lower !== undefined) {
@@ -36,7 +40,7 @@ IDBKeyRange.__createInstance = function (lower, upper, lowerOpen, upperOpen) {
         }
         if (lower !== undefined && upper !== undefined && lower !== upper) {
             if (Key.encode(lower) > Key.encode(upper)) {
-                throw (0, DOMException_1.createDOMException)('DataError', '`lower` must not be greater than `upper` argument in `bound()` call.');
+                throw (0, DOMException_js_1.createDOMException)('DataError', '`lower` must not be greater than `upper` argument in `bound()` call.');
             }
         }
         this.__lower = lowerConverted;
@@ -68,18 +72,21 @@ IDBKeyRange.lowerBound = function (value /*, open */) {
     if (!arguments.length) {
         throw new TypeError('IDBKeyRange.lowerBound requires a value argument');
     }
+    // eslint-disable-next-line prefer-rest-params
     return IDBKeyRange.__createInstance(value, undefined, arguments[1], true);
 };
 IDBKeyRange.upperBound = function (value /*, open */) {
     if (!arguments.length) {
         throw new TypeError('IDBKeyRange.upperBound requires a value argument');
     }
+    // eslint-disable-next-line prefer-rest-params
     return IDBKeyRange.__createInstance(undefined, value, true, arguments[1]);
 };
 IDBKeyRange.bound = function (lower, upper /* , lowerOpen, upperOpen */) {
     if (arguments.length <= 1) {
         throw new TypeError('IDBKeyRange.bound requires lower and upper arguments');
     }
+    // eslint-disable-next-line prefer-rest-params
     return IDBKeyRange.__createInstance(lower, upper, arguments[2], arguments[3]);
 };
 IDBKeyRange.prototype[Symbol.toStringTag] = 'IDBKeyRangePrototype';
@@ -154,7 +161,7 @@ function convertValueToKeyRange(value, nullDisallowed) {
     }
     if (util.isNullish(value)) {
         if (nullDisallowed) {
-            throw (0, DOMException_1.createDOMException)('DataError', 'No key or range was specified');
+            throw (0, DOMException_js_1.createDOMException)('DataError', 'No key or range was specified');
         }
         return undefined; // Represents unbounded
     }

@@ -5,7 +5,7 @@ var eventtargeter_1 = require("eventtargeter");
 Object.defineProperty(exports, "ShimEventTarget", { enumerable: true, get: function () { return eventtargeter_1.ShimEventTarget; } });
 Object.defineProperty(exports, "ShimEvent", { enumerable: true, get: function () { return eventtargeter_1.ShimEvent; } });
 Object.defineProperty(exports, "ShimCustomEvent", { enumerable: true, get: function () { return eventtargeter_1.ShimCustomEvent; } });
-var util = require("./util");
+var util = require("./util.js");
 /**
  *
  * @param {string} type

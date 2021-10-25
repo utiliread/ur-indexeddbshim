@@ -1,17 +1,20 @@
-/* globals location, Event */
+/* globals location */
 import path from 'path';
 import SyncPromise from 'sync-promise';
-import { createEvent } from './Event';
-import IDBVersionChangeEvent from './IDBVersionChangeEvent';
-import { logError, webSQLErrback, createDOMException } from './DOMException';
-import { IDBOpenDBRequest } from './IDBRequest';
-import cmp from './cmp';
-import * as util from './util';
-import * as Key from './Key';
-import IDBTransaction from './IDBTransaction';
-import IDBDatabase from './IDBDatabase';
-import CFG from './CFG';
-var fs = ({}.toString.call(process) === '[object process]') ? require('fs') : null;
+import { createEvent } from './Event.js';
+import IDBVersionChangeEvent from './IDBVersionChangeEvent.js';
+import { logError, webSQLErrback, createDOMException } from './DOMException.js';
+import { IDBOpenDBRequest } from './IDBRequest.js';
+import cmp from './cmp.js';
+import * as util from './util.js';
+import * as Key from './Key.js';
+import IDBTransaction from './IDBTransaction.js';
+import IDBDatabase from './IDBDatabase.js';
+import CFG from './CFG.js';
+var fs;
+var setFS = function (_fs) {
+    fs = _fs;
+};
 var getOrigin = function () {
     return (typeof location !== 'object' || !location) ? 'null' : location.origin;
 };
@@ -35,6 +38,7 @@ function processNextInConnectionQueue(name, origin) {
     req.addEventListener('error', removeFromQueue);
     cb(req);
 }
+// eslint-disable-next-line default-param-last
 function addRequestToConnectionQueue(req, name, origin, cb) {
     if (origin === void 0) { origin = getOrigin(); }
     if (!connectionQueue[origin][name]) {
@@ -49,8 +53,10 @@ function triggerAnyVersionChangeAndBlockedEvents(openConnections, req, oldVersio
     // Todo: For Node (and in browser using service workers if available?) the
     //    connections ought to involve those in any process; should also
     //    auto-close if unloading
-    var connectionIsClosed = function (connection) { return connection.__closed; };
-    var connectionsClosed = function () { return openConnections.every(connectionIsClosed); };
+    var connectionIsClosed = function (connection) { return connection.__closePending; };
+    var connectionsClosed = function () { return openConnections.every(function (conn) {
+        return connectionIsClosed(conn);
+    }); };
     return openConnections.reduce(function (promises, entry) {
         if (connectionIsClosed(entry)) {
             return promises;
@@ -101,13 +107,14 @@ var websqlDBCache = {};
 var sysdb;
 var nameCounter = 0;
 function getLatestCachedWebSQLVersion(name) {
-    return Object.keys(websqlDBCache[name]).map(Number).reduce(function (prev, curr) {
+    return Object.keys(websqlDBCache[name]).map(function (version) {
+        return Number(version);
+    }).reduce(function (prev, curr) {
         return curr > prev ? curr : prev;
     }, 0);
 }
 function getLatestCachedWebSQLDB(name) {
-    return websqlDBCache[name] && websqlDBCache[name][ // eslint-disable-line standard/computed-property-even-spacing
-    getLatestCachedWebSQLVersion(name)];
+    return websqlDBCache[name] && websqlDBCache[name][getLatestCachedWebSQLVersion(name)];
 }
 function cleanupDatabaseResources(__openDatabase, name, escapedDatabaseName, databaseDeleted, dbError) {
     var useMemoryDatabase = typeof CFG.memoryDatabase === 'string';
@@ -173,8 +180,16 @@ function cleanupDatabaseResources(__openDatabase, name, escapedDatabaseName, dat
     });
 }
 /**
- * Creates the sysDB to keep track of version numbers for databases
- **/
+* @callback CreateSysDBSuccessCallback
+* @returns {void}
+*/
+/**
+ * Creates the sysDB to keep track of version numbers for databases.
+ * @param {openDatabase} __openDatabase
+ * @param {CreateSysDBSuccessCallback} success
+ * @param {DOMException} failure
+ * @returns {void}
+ */
 function createSysDB(__openDatabase, success, failure) {
     function sysDbCreateError(tx, err) {
         err = webSQLErrback(err || tx);
@@ -202,8 +217,8 @@ function createSysDB(__openDatabase, success, failure) {
     }
 }
 /**
- * IDBFactory Class
- * https://w3c.github.io/IndexedDB/#idl-def-IDBFactory
+ * IDBFactory Class.
+ * @see https://w3c.github.io/IndexedDB/#idl-def-IDBFactory
  * @class
  */
 function IDBFactory() {
@@ -218,16 +233,21 @@ IDBFactory.__createInstance = function () {
     IDBFactory.prototype = IDBFactoryAlias.prototype;
     return new IDBFactory();
 };
+/* eslint-disable jsdoc/check-param-names */
 /**
- * The IndexedDB Method to create a new database and return the DB
+ * The IndexedDB Method to create a new database and return the DB.
  * @param {string} name
  * @param {number} version
+ * @throws {TypeError} Illegal invocation or no arguments (for database name)
+ * @returns {IDBOpenDBRequest}
  */
 IDBFactory.prototype.open = function (name /* , version */) {
+    /* eslint-enable jsdoc/check-param-names */
     var me = this;
     if (!(me instanceof IDBFactory)) {
         throw new TypeError('Illegal invocation');
     }
+    // eslint-disable-next-line prefer-rest-params
     var version = arguments[1];
     if (arguments.length === 0) {
         throw new TypeError('Database name is required');
@@ -251,8 +271,10 @@ IDBFactory.prototype.open = function (name /* , version */) {
     var useMemoryDatabase = typeof CFG.memoryDatabase === 'string';
     var useDatabaseCache = CFG.cacheDatabaseInstances !== false || useMemoryDatabase;
     var escapedDatabaseName;
+    // eslint-disable-next-line no-useless-catch
     try {
         escapedDatabaseName = util.escapeDatabaseNameForSQLAndFiles(name);
+        // eslint-disable-next-line radar/no-useless-catch
     }
     catch (err) {
         throw err; // new TypeError('You have supplied a database name which does not match the currently supported configuration, possibly due to a length limit enforced for Node compatibility.');
@@ -265,7 +287,7 @@ IDBFactory.prototype.open = function (name /* , version */) {
         calledDbCreateError = true;
         // Re: why bubbling here (and how cancelable is only really relevant for `window.onerror`) see: https://github.com/w3c/IndexedDB/issues/86
         var evt = createEvent('error', err, { bubbles: true, cancelable: true });
-        req.__readyState = 'done';
+        req.__done = true;
         req.__error = err;
         req.__result = undefined; // Must be undefined if an error per `result` getter
         req.dispatchEvent(evt);
@@ -274,7 +296,7 @@ IDBFactory.prototype.open = function (name /* , version */) {
         tx.executeSql('SELECT "name", "keyPath", "autoInc", "indexList" FROM __sys__', [], function (tx, data) {
             function finishRequest() {
                 req.__result = connection;
-                req.__readyState = 'done'; // https://github.com/w3c/IndexedDB/pull/202
+                req.__done = true;
             }
             var connection = IDBDatabase.__createInstance(db, name, oldVersion, version, data);
             if (!me.__connections[name]) {
@@ -318,7 +340,7 @@ IDBFactory.prototype.open = function (name /* , version */) {
                             var e = new IDBVersionChangeEvent('upgradeneeded', { oldVersion: oldVersion, newVersion: version });
                             req.__result = connection;
                             connection.__upgradeTransaction = req.__transaction = req.__result.__versionTransaction = IDBTransaction.__createInstance(req.__result, req.__result.objectStoreNames, 'versionchange');
-                            req.__readyState = 'done';
+                            req.__done = true;
                             req.transaction.__addNonRequestToTransactionQueue(function onupgradeneeded(tx, args, finished, error) {
                                 req.dispatchEvent(e);
                                 if (e.__legacyOutputDidListenersThrowError) {
@@ -349,11 +371,9 @@ IDBFactory.prototype.open = function (name /* , version */) {
                             };
                             req.transaction.on__abort = function () {
                                 req.__transaction = null;
-                                // `readyState` and `result` will be reset anyways by `dbCreateError` but we follow spec:
-                                //    see https://github.com/w3c/IndexedDB/issues/161 and
-                                //    https://github.com/w3c/IndexedDB/pull/202
+                                // `readyState` and `result` will be reset anyways by `dbCreateError` but we follow spec.
                                 req.__result = undefined;
-                                req.__readyState = 'pending';
+                                req.__done = false;
                                 connection.close();
                                 setTimeout(function () {
                                     var err = createDOMException('AbortError', 'The upgrade transaction was aborted.');
@@ -367,7 +387,7 @@ IDBFactory.prototype.open = function (name /* , version */) {
                                 });
                             };
                             req.transaction.on__complete = function () {
-                                if (req.__result.__closed) {
+                                if (req.__result.__closePending) {
                                     req.__transaction = null;
                                     var err = createDOMException('AbortError', 'The connection has been closed.');
                                     dbCreateError(err);
@@ -432,6 +452,9 @@ IDBFactory.prototype.open = function (name /* , version */) {
         else {
             db = me.__openDatabase(useMemoryDatabase ? CFG.memoryDatabase : path.join(CFG.databaseBasePath || '', escapedDatabaseName), 1, name, CFG.DEFAULT_DB_SIZE);
             if (useDatabaseCache) {
+                if (!(name in websqlDBCache)) {
+                    websqlDBCache[name] = {};
+                }
                 websqlDBCache[name][version] = db;
             }
         }
@@ -493,7 +516,7 @@ IDBFactory.prototype.open = function (name /* , version */) {
     return req;
 };
 /**
- * Deletes a database
+ * Deletes a database.
  * @param {string} name
  * @returns {IDBOpenDBRequest}
  */
@@ -511,8 +534,10 @@ IDBFactory.prototype.deleteDatabase = function (name) {
     name = String(name); // cast to a string
     var sqlSafeName = util.escapeSQLiteStatement(name);
     var escapedDatabaseName;
+    // eslint-disable-next-line no-useless-catch
     try {
         escapedDatabaseName = util.escapeDatabaseNameForSQLAndFiles(name);
+        // eslint-disable-next-line radar/no-useless-catch
     }
     catch (err) {
         throw err; // throw new TypeError('You have supplied a database name which does not match the currently supported configuration, possibly due to a length limit enforced for Node compatibility.');
@@ -534,7 +559,7 @@ IDBFactory.prototype.deleteDatabase = function (name) {
         }
         err = webSQLErrback(err || tx);
         sysdbFinishedCbDelete(true, function () {
-            req.__readyState = 'done';
+            req.__done = true;
             req.__error = err;
             req.__result = undefined; // Must be undefined if an error per `result` getter
             // Re: why bubbling here (and how cancelable is only really relevant for `window.onerror`) see: https://github.com/w3c/IndexedDB/issues/86
@@ -549,7 +574,7 @@ IDBFactory.prototype.deleteDatabase = function (name) {
             // callback(function () {
             function completeDatabaseDelete() {
                 req.__result = undefined;
-                req.__readyState = 'done'; // https://github.com/w3c/IndexedDB/pull/202
+                req.__done = true;
                 var e = new IDBVersionChangeEvent('success', { oldVersion: version, newVersion: null });
                 req.dispatchEvent(e);
             }
@@ -621,8 +646,9 @@ IDBFactory.prototype.cmp = function (key1, key2) {
     return cmp(key1, key2);
 };
 /**
-* May return outdated information if a database has since been deleted
+* May return outdated information if a database has since been deleted.
 * @see https://github.com/w3c/IndexedDB/pull/240/files
+* @returns {Promise<string[]>}
 */
 IDBFactory.prototype.databases = function () {
     var me = this;
@@ -660,10 +686,15 @@ IDBFactory.prototype.databases = function () {
     });
 };
 /**
-* @todo __forceClose: Test
+* @todo forceClose: Test
 * This is provided to facilitate unit-testing of the
 *  closing of a database connection with a forced flag:
 * <http://w3c.github.io/IndexedDB/#steps-for-closing-a-database-connection>
+* @param {string} dbName
+* @param {Integer} connIdx
+* @param {string} msg
+* @throws {TypeError}
+* @returns {void}
 */
 IDBFactory.prototype.__forceClose = function (dbName, connIdx, msg) {
     var me = this;
@@ -671,13 +702,17 @@ IDBFactory.prototype.__forceClose = function (dbName, connIdx, msg) {
         conn.__forceClose(msg);
     }
     if (util.isNullish(dbName)) {
-        Object.values(me.__connections).forEach(function (conn) { return conn.forEach(forceClose); });
+        Object.values(me.__connections).forEach(function (conn) {
+            forceClose(conn);
+        });
     }
     else if (!me.__connections[dbName]) {
         console.log('No database connections with that name to force close');
     }
     else if (util.isNullish(connIdx)) {
-        me.__connections[dbName].forEach(forceClose);
+        me.__connections[dbName].forEach(function (conn) {
+            forceClose(conn);
+        });
     }
     else if (!Number.isInteger(connIdx) || connIdx < 0 || connIdx > me.__connections[dbName].length - 1) {
         throw new TypeError('If providing an argument, __forceClose must be called with a ' +
@@ -696,4 +731,4 @@ Object.defineProperty(IDBFactory, 'prototype', {
     writable: false
 });
 var shimIndexedDB = IDBFactory.__createInstance();
-export { IDBFactory, cmp, shimIndexedDB };
+export { IDBFactory, cmp, shimIndexedDB, setFS };

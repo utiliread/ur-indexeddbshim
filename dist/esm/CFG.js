@@ -68,6 +68,8 @@ var CFG = {};
     // NODE-IMPINGING SETTINGS (created for sake of limitations in Node
     //    or desktop file system implementation but applied by default in
     //    browser for parity)
+    // File system module with `unlink` to remove deleted database files
+    'fs',
     // Used when setting global shims to determine whether to try to add
     //   other globals shimmed by the library (`ShimDOMException`,
     //   `ShimDOMStringList`, `ShimEvent`, `ShimCustomEvent`, `ShimEventTarget`)

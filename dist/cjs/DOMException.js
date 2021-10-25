@@ -2,7 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.webSQLErrback = exports.createDOMException = exports.ShimDOMException = exports.findError = exports.logError = void 0;
 /* globals DOMException */
-var CFG_1 = require("./CFG");
+var CFG_js_1 = require("./CFG.js");
 /**
  * Creates a native DOMException, for browsers that support it.
  * @param {string} name
@@ -111,6 +111,7 @@ function createNonNativeDOMExceptionClass() {
     }
     // Necessary for W3C tests which complains if `DOMException` has properties on its "own" prototype
     // class DummyDOMException extends Error {}; // Sometimes causing problems in Node
+    // eslint-disable-next-line func-name-matching
     var DummyDOMException = function DOMException() { };
     DummyDOMException.prototype = Object.create(Error.prototype); // Intended for subclassing
     ['name', 'message'].forEach(function (prop) {
@@ -173,7 +174,9 @@ function createNonNativeDOMExceptionClass() {
 }
 var ShimNonNativeDOMException = createNonNativeDOMExceptionClass();
 /**
- * Creates a generic Error object
+ * Creates a generic Error object.
+ * @param {string} name
+ * @param {string} message
  * @returns {Error}
  */
 function createNonNativeDOMException(name, message) {
@@ -184,9 +187,10 @@ function createNonNativeDOMException(name, message) {
  * @param {string} name
  * @param {string} message
  * @param {string|Error|null} error
+ * @returns {void}
  */
 function logError(name, message, error) {
-    if (CFG_1.default.DEBUG) {
+    if (CFG_js_1.default.DEBUG) {
         if (error && error.message) {
             error = error.message;
         }
@@ -213,8 +217,8 @@ function findError(args) {
         if (args.length === 1) {
             return args[0];
         }
-        for (var i = 0; i < args.length; i++) {
-            var arg = args[i];
+        for (var _i = 0, args_1 = args; _i < args_1.length; _i++) {
+            var arg = args_1[_i];
             if (isErrorOrDOMErrorOrDOMException(arg)) {
                 return arg;
             }
@@ -272,20 +276,17 @@ try {
     }
 }
 catch (e) { }
-var createDOMException, ShimDOMException;
-exports.createDOMException = createDOMException;
-exports.ShimDOMException = ShimDOMException;
-if (useNativeDOMException) {
-    exports.ShimDOMException = ShimDOMException = DOMException;
-    exports.createDOMException = createDOMException = function (name, message, error) {
+var createDOMException = useNativeDOMException
+    ? function (name, message, error) {
         logError(name, message, error);
         return createNativeDOMException(name, message);
-    };
-}
-else {
-    exports.ShimDOMException = ShimDOMException = ShimNonNativeDOMException;
-    exports.createDOMException = createDOMException = function (name, message, error) {
+    }
+    : function (name, message, error) {
         logError(name, message, error);
         return createNonNativeDOMException(name, message);
     };
-}
+exports.createDOMException = createDOMException;
+var ShimDOMException = useNativeDOMException
+    ? DOMException
+    : ShimNonNativeDOMException;
+exports.ShimDOMException = ShimDOMException;

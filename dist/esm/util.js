@@ -7,17 +7,19 @@ var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
     }
     return to.concat(ar || Array.prototype.slice.call(from));
 };
-import CFG from './CFG';
-import expandsOnNFD from './unicode-regex';
+import CFG from './CFG.js';
+import expandsOnNFD from './unicode-regex.js';
 function escapeUnmatchedSurrogates(arg) {
     // http://stackoverflow.com/a/6701665/271577
     return arg.replace(/([\uD800-\uDBFF])(?![\uDC00-\uDFFF])|(^|[^\uD800-\uDBFF])([\uDC00-\uDFFF])/gu, function (_, unmatchedHighSurrogate, precedingLow, unmatchedLowSurrogate) {
         // Could add a corresponding surrogate for compatibility with `node-sqlite3`: http://bugs.python.org/issue12569 and http://stackoverflow.com/a/6701665/271577
         //   but Chrome having problems
         if (unmatchedHighSurrogate) {
-            return '^2' + padStart(unmatchedHighSurrogate.charCodeAt().toString(16), 4, '0');
+            return '^2' + unmatchedHighSurrogate.charCodeAt()
+                .toString(16).padStart(4, '0');
         }
-        return (precedingLow || '') + '^3' + padStart(unmatchedLowSurrogate.charCodeAt().toString(16), 4, '0');
+        return (precedingLow || '') + '^3' +
+            unmatchedLowSurrogate.charCodeAt().toString(16).padStart(4, '0');
     });
 }
 function escapeNameForSQLiteIdentifier(arg) {
@@ -39,7 +41,7 @@ function unescapeSQLiteResponse(arg) {
     return unescapeUnmatchedSurrogates(arg)
         .replace(/(\^+)0/gu, function (_, esc) {
         return esc.length % 2
-            ? '\0'
+            ? esc.slice(1) + '\0'
             : _;
     })
         .replace(/\^\^/gu, '^');
@@ -66,11 +68,8 @@ function escapeDatabaseNameForSQLAndFiles(db) {
     db = 'D' + escapeNameForSQLiteIdentifier(db);
     if (CFG.escapeNFDForDatabaseNames !== false) {
         // ES6 copying of regex with different flags
-        // Todo: Remove `.source` when
-        //   https://github.com/babel/babel/issues/5978 completed (see also
-        //   https://github.com/axemclion/IndexedDBShim/issues/311#issuecomment-316090147 )
-        db = db.replace(new RegExp(expandsOnNFD.source, 'gu'), function (expandable) {
-            return '^4' + padStart(expandable.codePointAt().toString(16), 6, '0');
+        db = db.replace(new RegExp(expandsOnNFD, 'gu'), function (expandable) {
+            return '^4' + expandable.codePointAt().toString(16).padStart(6, '0');
         });
     }
     if (CFG.databaseCharacterEscapeList !== false) {
@@ -78,7 +77,7 @@ function escapeDatabaseNameForSQLAndFiles(db) {
             ? new RegExp(CFG.databaseCharacterEscapeList, 'gu')
             : /[\u0000-\u001F\u007F"*/:<>?\\|]/gu), // eslint-disable-line no-control-regex
         function (n0) {
-            return '^1' + padStart(n0.charCodeAt().toString(16), 2, '0');
+            return '^1' + n0.charCodeAt().toString(16).padStart(2, '0');
         });
     }
     if (CFG.databaseNameLengthLimit !== false &&
@@ -92,11 +91,11 @@ function unescapeUnmatchedSurrogates(arg) {
     return arg
         .replace(/(\^+)3(d[0-9a-f]{3})/gu, function (_, esc, lowSurr) {
         return esc.length % 2
-            ? esc.slice(1) + String.fromCharCode(parseInt(lowSurr, 16))
+            ? esc.slice(1) + String.fromCharCode(Number.parseInt(lowSurr, 16))
             : _;
     }).replace(/(\^+)2(d[0-9a-f]{3})/gu, function (_, esc, highSurr) {
         return esc.length % 2
-            ? esc.slice(1) + String.fromCharCode(parseInt(highSurr, 16))
+            ? esc.slice(1) + String.fromCharCode(Number.parseInt(highSurr, 16))
             : _;
     });
 }
@@ -113,12 +112,12 @@ function unescapeDatabaseNameForSQLAndFiles(db) {
         // CFG.databaseCharacterEscapeList
         .replace(/(\^+)1([0-9a-f]{2})/gu, function (_, esc, hex) {
         return esc.length % 2
-            ? esc.slice(1) + String.fromCharCode(parseInt(hex, 16))
+            ? esc.slice(1) + String.fromCharCode(Number.parseInt(hex, 16))
             : _;
         // CFG.escapeNFDForDatabaseNames
     }).replace(/(\^+)4([0-9a-f]{6})/gu, function (_, esc, hex) {
         return esc.length % 2
-            ? esc.slice(1) + String.fromCodePoint(parseInt(hex, 16))
+            ? esc.slice(1) + String.fromCodePoint(Number.parseInt(hex, 16))
             : _;
     })
     // escapeNameForSQLiteIdentifier (including unescapeUnmatchedSurrogates() above)
@@ -240,26 +239,33 @@ function defineListenerProperties(obj, listeners) {
         obj[l] = null;
     });
 }
-function defineReadonlyProperties(obj, props) {
+function defineReadonlyProperties(obj, props, getter) {
+    if (getter === void 0) { getter = null; }
     props = typeof props === 'string' ? [props] : props;
     props.forEach(function (prop) {
         var _a;
-        Object.defineProperty(obj, '__' + prop, {
-            enumerable: false,
-            configurable: false,
-            writable: true
-        });
-        // We must resort to this to get "get <name>" as
-        //   the function `name` for proper IDL
-        var o = (_a = {},
-            Object.defineProperty(_a, prop, {
-                get: function () {
-                    return this['__' + prop];
-                },
+        var o;
+        if (getter && prop in getter) {
+            o = getter[prop];
+        }
+        else {
+            Object.defineProperty(obj, '__' + prop, {
                 enumerable: false,
-                configurable: true
-            }),
-            _a);
+                configurable: false,
+                writable: true
+            });
+            // We must resort to this to get "get <name>" as
+            //   the function `name` for proper IDL
+            o = (_a = {},
+                Object.defineProperty(_a, prop, {
+                    get: function () {
+                        return this['__' + prop];
+                    },
+                    enumerable: false,
+                    configurable: true
+                }),
+                _a);
+        }
         var desc = Object.getOwnPropertyDescriptor(o, prop);
         // desc.enumerable = true; // Default
         // desc.configurable = true; // Default
@@ -280,14 +286,17 @@ function isIdentifier(item) {
 }
 function isValidKeyPathString(keyPathString) {
     return typeof keyPathString === 'string' &&
-        (keyPathString === '' || isIdentifier(keyPathString) || keyPathString.split('.').every(isIdentifier));
+        (keyPathString === '' || isIdentifier(keyPathString) || keyPathString.split('.').every(function (pathComponent) {
+            return isIdentifier(pathComponent);
+        }));
 }
 function isValidKeyPath(keyPath) {
     return isValidKeyPathString(keyPath) || (Array.isArray(keyPath) && keyPath.length &&
         // Convert array from sparse to dense http://www.2ality.com/2012/06/dense-arrays.html
         // See also https://heycam.github.io/webidl/#idl-DOMString
-        __spreadArray([], keyPath, true).every(isValidKeyPathString) // eslint-disable-line prefer-spread
-    );
+        __spreadArray([], keyPath, true).every(function (pathComponent) {
+            return isValidKeyPathString(pathComponent);
+        }));
 }
 function enforceRange(number, type) {
     number = Math.floor(Number(number));
@@ -306,7 +315,7 @@ function enforceRange(number, type) {
         default:
             throw new Error('Unrecognized type supplied to enforceRange');
     }
-    if (isNaN(number) || !isFinite(number) ||
+    if (!Number.isFinite(number) ||
         number > max ||
         number < min) {
         throw new TypeError('Invalid range: ' + number);
@@ -324,7 +333,9 @@ function convertToSequenceDOMString(val) {
     // Per <https://heycam.github.io/webidl/#idl-sequence>, converting to a sequence works with iterables
     if (isIterable(val)) { // We don't want conversion to array to convert primitives
         // Per <https://heycam.github.io/webidl/#es-DOMString>, converting to a `DOMString` to be via `ToString`: https://tc39.github.io/ecma262/#sec-tostring
-        return __spreadArray([], val, true).map(ToString);
+        return __spreadArray([], val, true).map(function (item) {
+            return ToString(item);
+        });
     }
     return ToString(val);
 }
@@ -332,10 +343,6 @@ function isNullish(v) {
     return v === null || v === undefined;
 }
 function hasOwn(obj, prop) {
-    return {}.hasOwnProperty.call(obj, prop);
+    return Object.prototype.hasOwnProperty.call(obj, prop);
 }
-// Todo: Replace with `String.prototype.padStart` when targeting supporting Node version
-function padStart(str, ct, fill) {
-    return new Array(ct - (String(str)).length + 1).join(fill) + str;
-}
-export { escapeSQLiteStatement, unescapeSQLiteResponse, escapeDatabaseNameForSQLAndFiles, unescapeDatabaseNameForSQLAndFiles, escapeStoreNameForSQL, escapeIndexNameForSQL, escapeIndexNameForSQLKeyColumn, sqlLIKEEscape, sqlQuote, instanceOf, isObj, isDate, isBlob, isRegExp, isFile, isBinary, isIterable, defineOuterInterface, defineReadonlyOuterInterface, defineListenerProperties, defineReadonlyProperties, isValidKeyPath, enforceRange, convertToDOMString, convertToSequenceDOMString, isNullish, hasOwn, padStart };
+export { escapeSQLiteStatement, unescapeSQLiteResponse, escapeDatabaseNameForSQLAndFiles, unescapeDatabaseNameForSQLAndFiles, escapeStoreNameForSQL, escapeIndexNameForSQL, escapeIndexNameForSQLKeyColumn, sqlLIKEEscape, sqlQuote, instanceOf, isObj, isDate, isBlob, isRegExp, isFile, isBinary, isIterable, defineOuterInterface, defineReadonlyOuterInterface, defineListenerProperties, defineReadonlyProperties, isValidKeyPath, enforceRange, convertToDOMString, convertToSequenceDOMString, isNullish, hasOwn };

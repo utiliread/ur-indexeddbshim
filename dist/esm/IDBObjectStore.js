@@ -8,25 +8,27 @@ var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
     return to.concat(ar || Array.prototype.slice.call(from));
 };
 import SyncPromise from 'sync-promise';
-import { createDOMException } from './DOMException';
-import { IDBCursor, IDBCursorWithValue } from './IDBCursor';
-import { setSQLForKeyRange, convertValueToKeyRange } from './IDBKeyRange';
-import DOMStringList from './DOMStringList';
-import * as util from './util';
-import * as Key from './Key';
-import { executeFetchIndexData, buildFetchIndexDataSQL, IDBIndex } from './IDBIndex';
-import IDBTransaction from './IDBTransaction';
-import * as Sca from './Sca';
-import CFG from './CFG';
+import { createDOMException } from './DOMException.js';
+import { IDBCursor, IDBCursorWithValue } from './IDBCursor.js';
+import { setSQLForKeyRange, convertValueToKeyRange } from './IDBKeyRange.js';
+import DOMStringList from './DOMStringList.js';
+import * as util from './util.js';
+import * as Key from './Key.js';
+import { executeFetchIndexData, buildFetchIndexDataSQL, IDBIndex } from './IDBIndex.js';
+import IDBTransaction from './IDBTransaction.js';
+import * as Sca from './Sca.js';
+import CFG from './CFG.js';
 var readonlyProperties = ['keyPath', 'indexNames', 'transaction', 'autoIncrement'];
+/* eslint-disable jsdoc/check-param-names */
 /**
- * IndexedDB Object Store
- * http://dvcs.w3.org/hg/IndexedDB/raw-file/tip/Overview.html#idl-def-IDBObjectStore
+ * IndexedDB Object Store.
+ * @see http://dvcs.w3.org/hg/IndexedDB/raw-file/tip/Overview.html#idl-def-IDBObjectStore
  * @param {IDBObjectStoreProperties} storeProperties
  * @param {IDBTransaction} transaction
  * @class
  */
 function IDBObjectStore() {
+    /* eslint-enable jsdoc/check-param-names */
     throw new TypeError('Illegal constructor');
 }
 var IDBObjectStoreAlias = IDBObjectStore;
@@ -117,6 +119,7 @@ IDBObjectStore.__createInstance = function (storeProperties, transaction) {
  * @param {IDBObjectStore} store
  * @param {IDBTransaction} transaction
  * @protected
+ * @returns {IDBObjectStore}
  */
 IDBObjectStore.__clone = function (store, transaction) {
     var newStore = IDBObjectStore.__createInstance({
@@ -142,6 +145,7 @@ IDBObjectStore.__invalidStateIfDeleted = function (store, msg) {
  * @param {IDBDatabase} db
  * @param {IDBObjectStore} store
  * @protected
+ * @returns {IDBObjectStore}
  */
 IDBObjectStore.__createObjectStore = function (db, store) {
     // Add the object store to the IDBDatabase
@@ -171,7 +175,16 @@ IDBObjectStore.__createObjectStore = function (db, store) {
         tx.executeSql(sql, [], function (tx, data) {
             function insertStoreInfo() {
                 var encodedKeyPath = JSON.stringify(store.keyPath);
-                tx.executeSql('INSERT INTO __sys__ VALUES (?,?,?,?,?)', [util.escapeSQLiteStatement(storeName), encodedKeyPath, store.autoIncrement, '{}', 1], function () {
+                tx.executeSql('INSERT INTO __sys__ VALUES (?,?,?,?,?)', [
+                    util.escapeSQLiteStatement(storeName),
+                    encodedKeyPath,
+                    // For why converting here, see comment and following
+                    //  discussion at:
+                    //  https://github.com/axemclion/IndexedDBShim/issues/313#issuecomment-590086778
+                    Number(store.autoIncrement),
+                    '{}',
+                    1
+                ], function () {
                     delete store.__pendingCreate;
                     delete store.__deleted;
                     success(store);
@@ -191,6 +204,7 @@ IDBObjectStore.__createObjectStore = function (db, store) {
  * @param {IDBDatabase} db
  * @param {IDBObjectStore} store
  * @protected
+ * @returns {void}
  */
 IDBObjectStore.__deleteObjectStore = function (db, store) {
     // Remove the object store from the IDBDatabase
@@ -227,6 +241,11 @@ IDBObjectStore.__deleteObjectStore = function (db, store) {
         });
     });
 };
+/**
+* @typedef {GenericArray} KeyValueArray
+* @property {module:Key.Key} 0
+* @property {*} 1
+*/
 // Todo: Although we may end up needing to do cloning genuinely asynchronously (for Blobs and FileLists),
 //   and we'll want to ensure the queue starts up synchronously, we nevertheless do the cloning
 //   before entering the queue and its callback since the encoding we do is preceded by validation
@@ -236,9 +255,13 @@ IDBObjectStore.__deleteObjectStore = function (db, store) {
 //   a `SyncPromise` from the `Sca.clone` operation and later detecting and ensuring it is resolved
 //   before continuing).
 /**
- * Determines whether the given inline or out-of-line key is valid, according to the object store's schema.
- * @param {*} value     Used for inline keys
- * @param {*} key       Used for out-of-line keys
+ * Determines whether the given inline or out-of-line key is valid,
+ *   according to the object store's schema.
+ * @param {*} value Used for inline keys
+ * @param {*} key Used for out-of-line keys
+ * @param {boolean} cursorUpdate
+ * @throws {DOMException}
+ * @returns {KeyValueArray}
  * @private
  */
 IDBObjectStore.prototype.__validateKeyAndValueAndCloneValue = function (value, key, cursorUpdate) {
@@ -285,14 +308,16 @@ IDBObjectStore.prototype.__validateKeyAndValueAndCloneValue = function (value, k
     return [key, clonedValue];
 };
 /**
- * From the store properties and object, extracts the value for the key in the object store
- * If the table has auto increment, get the current number (unless it has a keyPath leading to a
- *  valid but non-numeric or < 1 key)
+ * From the store properties and object, extracts the value for the key in
+ *   the object store
+ * If the table has auto increment, get the current number (unless it has
+ *   a keyPath leading to a valid but non-numeric or < 1 key).
  * @param {Object} tx
  * @param {Object} value
  * @param {Object} key
  * @param {function} success
- * @param {function} failure
+ * @param {function} failCb
+ * @returns {void}
  */
 IDBObjectStore.prototype.__deriveKey = function (tx, value, key, success, failCb) {
     var me = this;
@@ -429,7 +454,8 @@ IDBObjectStore.prototype.__insertData = function (tx, encoded, value, clonedKeyO
         return undefined;
     }).catch(function (err) {
         function fail() {
-            // Todo: Add a different error object here if `assignCurrentNumber` fails in reverting?
+            // Todo: Add a different error object here if `assignCurrentNumber`
+            //  fails in reverting?
             error(err);
         }
         if (typeof oldCn === 'number') {
@@ -441,6 +467,7 @@ IDBObjectStore.prototype.__insertData = function (tx, encoded, value, clonedKeyO
 };
 IDBObjectStore.prototype.add = function (value /* , key */) {
     var me = this;
+    // eslint-disable-next-line prefer-rest-params
     var key = arguments[1];
     if (!(me instanceof IDBObjectStore)) {
         throw new TypeError('Illegal invocation');
@@ -458,6 +485,7 @@ IDBObjectStore.prototype.add = function (value /* , key */) {
 };
 IDBObjectStore.prototype.put = function (value /*, key */) {
     var me = this;
+    // eslint-disable-next-line prefer-rest-params
     var key = arguments[1];
     if (!(me instanceof IDBObjectStore)) {
         throw new TypeError('Illegal invocation');
@@ -480,13 +508,14 @@ IDBObjectStore.prototype.__overwrite = function (tx, key, cb, error) {
     var sql = 'DELETE FROM ' + util.escapeStoreNameForSQL(me.__currentName) + ' WHERE "key" = ?';
     var encodedKey = Key.encode(key);
     tx.executeSql(sql, [util.escapeSQLiteStatement(encodedKey)], function (tx, data) {
-        CFG.DEBUG && console.log('Did the row with the', key, 'exist? ', data.rowsAffected);
+        CFG.DEBUG && console.log('Did the row with the', key, 'exist?', data.rowsAffected);
         cb(tx);
     }, function (tx, err) {
         error(err);
     });
 };
 IDBObjectStore.__storingRecordObjectStore = function (request, store, invalidateCache, value, noOverwrite /* , key */) {
+    // eslint-disable-next-line prefer-rest-params
     var key = arguments[5];
     store.transaction.__pushToQueue(request, function (tx, args, success, error) {
         store.__deriveKey(tx, value, key, function (clonedKeyOrCurrentNumber, oldCn) {
@@ -533,7 +562,7 @@ IDBObjectStore.prototype.__get = function (query, getKey, getAll, count) {
         count = 1;
     }
     if (count) {
-        if (typeof count !== 'number' || isNaN(count) || !isFinite(count)) {
+        if (!Number.isFinite(count)) {
             throw new TypeError('The count parameter must be a finite number');
         }
         sql.push('LIMIT', count);
@@ -594,10 +623,12 @@ IDBObjectStore.prototype.getKey = function (query) {
     return this.__get(query, true);
 };
 IDBObjectStore.prototype.getAll = function ( /* query, count */) {
+    // eslint-disable-next-line prefer-rest-params
     var query = arguments[0], count = arguments[1];
     return this.__get(query, false, true, count);
 };
 IDBObjectStore.prototype.getAllKeys = function ( /* query, count */) {
+    // eslint-disable-next-line prefer-rest-params
     var query = arguments[0], count = arguments[1];
     return this.__get(query, true, true, count);
 };
@@ -652,6 +683,7 @@ IDBObjectStore.prototype.clear = function () {
 };
 IDBObjectStore.prototype.count = function ( /* query */) {
     var me = this;
+    // eslint-disable-next-line prefer-rest-params
     var query = arguments[0];
     if (!(me instanceof IDBObjectStore)) {
         throw new TypeError('Illegal invocation');
@@ -659,10 +691,11 @@ IDBObjectStore.prototype.count = function ( /* query */) {
     IDBObjectStore.__invalidStateIfDeleted(me);
     IDBTransaction.__assertActive(me.transaction);
     // We don't need to add to cursors array since has the count parameter which won't cache
-    return IDBCursorWithValue.__createInstance(query, 'next', me, me, 'key', 'value', true).__req;
+    return IDBCursorWithValue.__createInstance(query, 'next', me, me, 'key', 'value', true).__request;
 };
 IDBObjectStore.prototype.openCursor = function ( /* query, direction */) {
     var me = this;
+    // eslint-disable-next-line prefer-rest-params
     var query = arguments[0], direction = arguments[1];
     if (!(me instanceof IDBObjectStore)) {
         throw new TypeError('Illegal invocation');
@@ -670,7 +703,7 @@ IDBObjectStore.prototype.openCursor = function ( /* query, direction */) {
     IDBObjectStore.__invalidStateIfDeleted(me);
     var cursor = IDBCursorWithValue.__createInstance(query, direction, me, me, 'key', 'value');
     me.__cursors.push(cursor);
-    return cursor.__req;
+    return cursor.__request;
 };
 IDBObjectStore.prototype.openKeyCursor = function ( /* query, direction */) {
     var me = this;
@@ -678,10 +711,11 @@ IDBObjectStore.prototype.openKeyCursor = function ( /* query, direction */) {
         throw new TypeError('Illegal invocation');
     }
     IDBObjectStore.__invalidStateIfDeleted(me);
+    // eslint-disable-next-line prefer-rest-params
     var query = arguments[0], direction = arguments[1];
     var cursor = IDBCursor.__createInstance(query, direction, me, me, 'key', 'key');
     me.__cursors.push(cursor);
-    return cursor.__req;
+    return cursor.__request;
 };
 IDBObjectStore.prototype.index = function (indexName) {
     var me = this;
@@ -704,6 +738,7 @@ IDBObjectStore.prototype.index = function (indexName) {
     }
     return me.__indexHandles[indexName];
 };
+/* eslint-disable jsdoc/check-param-names */
 /**
  * Creates a new index on the object store.
  * @param {string} indexName
@@ -712,7 +747,9 @@ IDBObjectStore.prototype.index = function (indexName) {
  * @returns {IDBIndex}
  */
 IDBObjectStore.prototype.createIndex = function (indexName, keyPath /* , optionalParameters */) {
+    /* eslint-enable jsdoc/check-param-names */
     var me = this;
+    // eslint-disable-next-line prefer-rest-params
     var optionalParameters = arguments[2];
     if (!(me instanceof IDBObjectStore)) {
         throw new TypeError('Illegal invocation');
@@ -738,7 +775,7 @@ IDBObjectStore.prototype.createIndex = function (indexName, keyPath /* , optiona
         throw createDOMException('InvalidAccessError', 'The keyPath argument was an array and the multiEntry option is true.');
     }
     optionalParameters = optionalParameters || {};
-    /** @name IDBIndexProperties **/
+    /** @name IDBIndexProperties */
     var indexProperties = {
         columnName: indexName,
         keyPath: keyPath,

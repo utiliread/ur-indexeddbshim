@@ -1,5 +1,5 @@
-import CFG from './CFG';
-import { encode as keyEncode, decode as keyDecode } from './Key';
+import CFG from './CFG.js';
+import { encode as keyEncode, decode as keyDecode } from './Key.js';
 /**
  * Compares two keys.
  * @param first
@@ -27,12 +27,10 @@ function cmp(first, second) {
         // Encoding/decoding mismatches are usually due to a loss of
         //   floating-point precision
         if (decodedKey1 !== first) {
-            console.warn(// eslint-disable-line no-console
-            first + ' was incorrectly encoded as ' + decodedKey1);
+            console.warn(first + ' was incorrectly encoded as ' + decodedKey1);
         }
         if (decodedKey2 !== second) {
-            console.warn(// eslint-disable-line no-console
-            second + ' was incorrectly encoded as ' + decodedKey2);
+            console.warn(second + ' was incorrectly encoded as ' + decodedKey2);
         }
     }
     return result;

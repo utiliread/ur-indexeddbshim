@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-var CFG_1 = require("./CFG");
-var Key_1 = require("./Key");
+var CFG_js_1 = require("./CFG.js");
+var Key_js_1 = require("./Key.js");
 /**
  * Compares two keys.
  * @param first
@@ -9,15 +9,15 @@ var Key_1 = require("./Key");
  * @returns {number}
  */
 function cmp(first, second) {
-    var encodedKey1 = (0, Key_1.encode)(first);
-    var encodedKey2 = (0, Key_1.encode)(second);
+    var encodedKey1 = (0, Key_js_1.encode)(first);
+    var encodedKey2 = (0, Key_js_1.encode)(second);
     var result = encodedKey1 > encodedKey2
         ? 1
         : encodedKey1 === encodedKey2 ? 0 : -1;
-    if (CFG_1.default.DEBUG) {
+    if (CFG_js_1.default.DEBUG) {
         // verify that the keys encoded correctly
-        var decodedKey1 = (0, Key_1.decode)(encodedKey1);
-        var decodedKey2 = (0, Key_1.decode)(encodedKey2);
+        var decodedKey1 = (0, Key_js_1.decode)(encodedKey1);
+        var decodedKey2 = (0, Key_js_1.decode)(encodedKey2);
         if (typeof first === 'object') {
             first = JSON.stringify(first);
             decodedKey1 = JSON.stringify(decodedKey1);
@@ -29,12 +29,10 @@ function cmp(first, second) {
         // Encoding/decoding mismatches are usually due to a loss of
         //   floating-point precision
         if (decodedKey1 !== first) {
-            console.warn(// eslint-disable-line no-console
-            first + ' was incorrectly encoded as ' + decodedKey1);
+            console.warn(first + ' was incorrectly encoded as ' + decodedKey1);
         }
         if (decodedKey2 !== second) {
-            console.warn(// eslint-disable-line no-console
-            second + ' was incorrectly encoded as ' + decodedKey2);
+            console.warn(second + ' was incorrectly encoded as ' + decodedKey2);
         }
     }
     return result;

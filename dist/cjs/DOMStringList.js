@@ -44,7 +44,8 @@ if (Object.defineProperty) {
 }
 /**
  * Shim the DOMStringList object.
- *
+ * @throws {TypeError}
+ * @class
  */
 var DOMStringList = function () {
     throw new TypeError('Illegal constructor');
@@ -88,9 +89,11 @@ DOMStringList.prototype = (_a = {
             return this._items;
         },
         forEach: function (cb, thisArg) {
+            // eslint-disable-next-line unicorn/no-array-callback-reference
             this._items.forEach(cb, thisArg);
         },
         map: function (cb, thisArg) {
+            // eslint-disable-next-line unicorn/no-array-callback-reference
             return this._items.map(cb, thisArg);
         },
         indexOf: function (str) {
@@ -110,7 +113,7 @@ DOMStringList.prototype = (_a = {
             (_a = this._items).splice.apply(_a, args);
             this._length = this._items.length;
             for (var i in this) {
-                if (i === String(parseInt(i))) {
+                if (i === String(Number.parseInt(i))) {
                     delete this[i];
                 }
             }
@@ -143,7 +146,7 @@ DOMStringList.prototype = (_a = {
     _a);
 Object.defineProperty(DOMStringList, Symbol.hasInstance, {
     value: function (obj) {
-        return ({}.toString.call(obj) === 'DOMStringListPrototype');
+        return Object.prototype.toString.call(obj) === 'DOMStringListPrototype';
     }
 });
 var DOMStringListAlias = DOMStringList;

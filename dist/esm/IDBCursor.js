@@ -7,24 +7,25 @@ var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
     }
     return to.concat(ar || Array.prototype.slice.call(from));
 };
-import { IDBRequest } from './IDBRequest';
-import IDBObjectStore from './IDBObjectStore';
-import { createDOMException } from './DOMException';
-import { setSQLForKeyRange, convertValueToKeyRange } from './IDBKeyRange';
-import { cmp } from './IDBFactory';
-import * as util from './util';
-import IDBTransaction from './IDBTransaction';
-import * as Key from './Key';
-import * as Sca from './Sca';
-import IDBIndex from './IDBIndex'; // eslint-disable-line import/no-named-as-default
-import CFG from './CFG';
+import { IDBRequest } from './IDBRequest.js';
+import IDBObjectStore from './IDBObjectStore.js';
+import { createDOMException } from './DOMException.js';
+import { setSQLForKeyRange, convertValueToKeyRange } from './IDBKeyRange.js';
+import { cmp } from './IDBFactory.js';
+import * as util from './util.js';
+import IDBTransaction from './IDBTransaction.js';
+import * as Key from './Key.js';
+import * as Sca from './Sca.js';
+import IDBIndex from './IDBIndex.js'; // eslint-disable-line import/no-named-as-default
+import CFG from './CFG.js';
 function IDBCursor() {
     throw new TypeError('Illegal constructor');
 }
 var IDBCursorAlias = IDBCursor;
+/* eslint-disable func-name-matching */
 /**
- * The IndexedDB Cursor Object
- * http://dvcs.w3.org/hg/IndexedDB/raw-file/tip/Overview.html#idl-def-IDBCursor
+ * The IndexedDB Cursor Object.
+ * @see http://dvcs.w3.org/hg/IndexedDB/raw-file/tip/Overview.html#idl-def-IDBCursor
  * @param {IDBKeyRange} query
  * @param {string} direction
  * @param {IDBObjectStore} store
@@ -32,10 +33,12 @@ var IDBCursorAlias = IDBCursor;
  * @param {string} keyColumnName
  * @param {string} valueColumnName
  * @param {boolean} count
+ * @returns {void}
  */
 IDBCursor.__super = function IDBCursor(query, direction, store, source, keyColumnName, valueColumnName, count) {
+    /* eslint-enable func-name-matching */
     this[Symbol.toStringTag] = 'IDBCursor';
-    util.defineReadonlyProperties(this, ['key', 'primaryKey']);
+    util.defineReadonlyProperties(this, ['key', 'primaryKey', 'request']);
     IDBObjectStore.__invalidStateIfDeleted(store);
     this.__indexSource = util.instanceOf(source, IDBIndex);
     if (this.__indexSource)
@@ -54,9 +57,9 @@ IDBCursor.__super = function IDBCursor(query, direction, store, source, keyColum
     this.__primaryKey = undefined;
     this.__store = store;
     this.__range = range;
-    this.__req = IDBRequest.__createInstance();
-    this.__req.__source = source;
-    this.__req.__transaction = this.__store.transaction;
+    this.__request = IDBRequest.__createInstance();
+    this.__request.__source = source;
+    this.__request.__transaction = this.__store.transaction;
     this.__keyColumnName = keyColumnName;
     this.__valueColumnName = valueColumnName;
     this.__keyOnly = valueColumnName === 'key';
@@ -237,8 +240,8 @@ IDBCursor.prototype.__findMultiEntry = function (key, primaryKey, tx, success, e
                 var rowItem = data.rows.item(i);
                 var rowKey = Key.decode(rowItem[me.__keyColumnName], true);
                 var matches = Key.findMultiEntryMatches(rowKey, me.__range);
-                for (var j = 0; j < matches.length; j++) {
-                    var matchingKey = matches[j];
+                for (var _i = 0, matches_1 = matches; _i < matches_1.length; _i++) {
+                    var matchingKey = matches_1[_i];
                     var clone = {
                         matchingKey: Key.encode(matchingKey, true),
                         key: rowItem.key
@@ -295,14 +298,29 @@ IDBCursor.prototype.__findMultiEntry = function (key, primaryKey, tx, success, e
     });
 };
 /**
- * Creates an "onsuccess" callback
+* @callback module:IDBCursor.SuccessArg
+* @param value
+* @param {IDBRequest} req
+* @returns {void}
+*/
+/**
+* @callback module:IDBCursor.SuccessCallback
+* @param key
+* @param value
+* @param primaryKey
+* @returns {void}
+*/
+/**
+ * Creates an "onsuccess" callback.
  * @private
+ * @param {module:IDBCursor.SuccessArg} success
+ * @returns {module:IDBCursor.SuccessCallback}
  */
 IDBCursor.prototype.__onsuccess = function (success) {
     var me = this;
     return function (key, value, primaryKey) {
         if (me.__count) {
-            success(value, me.__req);
+            success(value, me.__request);
         }
         else {
             if (key !== undefined) {
@@ -312,7 +330,7 @@ IDBCursor.prototype.__onsuccess = function (success) {
             me.__primaryKey = primaryKey === undefined ? null : primaryKey;
             me.__value = value === undefined ? null : value;
             var result = key === undefined ? null : me;
-            success(result, me.__req);
+            success(result, me.__request);
         }
     };
 };
@@ -323,7 +341,7 @@ IDBCursor.prototype.__decode = function (rowItem, callback) {
             me.__matchedKeys = {};
         }
         if (me.__matchedKeys[rowItem.matchingKey]) {
-            callback(undefined, undefined, undefined); // eslint-disable-line standard/no-callback-literal
+            callback(undefined, undefined, undefined);
             return;
         }
         me.__matchedKeys[rowItem.matchingKey] = true;
@@ -369,8 +387,8 @@ IDBCursor.prototype.__continueFinish = function (key, primaryKey, advanceState) 
     var me = this;
     var recordsToPreloadOnContinue = me.__advanceCount || CFG.cursorPreloadPackSize || 100;
     me.__gotValue = false;
-    me.__req.__readyState = 'pending'; // Unset done flag
-    me.__store.transaction.__pushToQueue(me.__req, function cursorContinue(tx, args, success, error, executeNextRequest) {
+    me.__request.__done = false;
+    me.__store.transaction.__pushToQueue(me.__request, function cursorContinue(tx, args, success, error, executeNextRequest) {
         function triggerSuccess(k, val, primKey) {
             if (advanceState) {
                 if (me.__advanceCount >= 2 && k !== undefined) {
@@ -419,6 +437,7 @@ IDBCursor.prototype.__continueFinish = function (key, primaryKey, advanceState) 
     });
 };
 IDBCursor.prototype.continue = function ( /* key */) {
+    // eslint-disable-next-line prefer-rest-params
     this.__continue(arguments[0]);
 };
 IDBCursor.prototype.continuePrimaryKey = function (key, primaryKey) {
@@ -535,7 +554,7 @@ IDBCursor.prototype.delete = function () {
     }, undefined, me);
 };
 IDBCursor.prototype[Symbol.toStringTag] = 'IDBCursorPrototype';
-util.defineReadonlyOuterInterface(IDBCursor.prototype, ['source', 'direction', 'key', 'primaryKey']);
+util.defineReadonlyOuterInterface(IDBCursor.prototype, ['source', 'direction', 'key', 'primaryKey', 'request']);
 Object.defineProperty(IDBCursor, 'prototype', {
     writable: false
 });
