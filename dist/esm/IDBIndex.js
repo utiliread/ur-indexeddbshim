@@ -1,3 +1,12 @@
+var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
+    if (pack || arguments.length === 2) for (var i = 0, l = from.length, ar; i < l; i++) {
+        if (ar || !(i in from)) {
+            if (!ar) ar = Array.prototype.slice.call(from, 0, i);
+            ar[i] = from[i];
+        }
+    }
+    return to.concat(ar || Array.prototype.slice.call(from));
+};
 import SyncPromise from 'sync-promise';
 import { createDOMException } from './DOMException';
 import { IDBCursor, IDBCursorWithValue } from './IDBCursor';
@@ -72,7 +81,7 @@ IDBIndex.__createInstance = function (store, indexProperties) {
                 var colInfoToPreserveArr = [
                     ['key', 'BLOB ' + (objectStore.autoIncrement ? 'UNIQUE, inc INTEGER PRIMARY KEY AUTOINCREMENT' : 'PRIMARY KEY')],
                     ['value', 'BLOB']
-                ].concat(objectStore.indexNames.slice().filter(function (indexName) { return indexName !== newName; })
+                ].concat(__spreadArray([], objectStore.indexNames, true).filter(function (indexName) { return indexName !== newName; })
                     .map(function (indexName) { return [util.escapeIndexNameForSQL(indexName), 'BLOB']; }));
                 me.__renameIndex(objectStore, oldName, newName, colInfoToPreserveArr, function (tx, success) {
                     IDBIndexAlias.__updateIndexList(store, tx, function (store) {
@@ -318,7 +327,7 @@ IDBIndex.prototype.__fetchIndexData = function (range, opType, nullDisallowed, c
         for (var _i = 0; _i < arguments.length; _i++) {
             args[_i] = arguments[_i];
         }
-        executeFetchIndexData.apply(void 0, [count].concat(fetchArgs, args));
+        executeFetchIndexData.apply(void 0, __spreadArray(__spreadArray([count], fetchArgs, false), args, false));
     }, undefined, me);
 };
 /**

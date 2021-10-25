@@ -26,8 +26,8 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-Object.defineProperty(exports, "__esModule", { value: true });
 var _a;
+Object.defineProperty(exports, "__esModule", { value: true });
 var cleanInterface = false;
 var testObject = { test: true };
 // Test whether Object.defineProperty really works.
@@ -102,11 +102,11 @@ DOMStringList.prototype = (_a = {
             this.sortList();
         },
         splice: function () {
+            var _a;
             var args = []; /* index, howmany, item1, ..., itemX */
             for (var _i = 0 /* index, howmany, item1, ..., itemX */; _i < arguments.length /* index, howmany, item1, ..., itemX */; _i++ /* index, howmany, item1, ..., itemX */) {
                 args[_i] = arguments[_i]; /* index, howmany, item1, ..., itemX */
             }
-            var _a;
             (_a = this._items).splice.apply(_a, args);
             this._length = this._items.length;
             for (var i in this) {

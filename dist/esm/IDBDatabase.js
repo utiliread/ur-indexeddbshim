@@ -9,6 +9,15 @@ var __assign = (this && this.__assign) || function () {
     };
     return __assign.apply(this, arguments);
 };
+var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
+    if (pack || arguments.length === 2) for (var i = 0, l = from.length, ar; i < l; i++) {
+        if (ar || !(i in from)) {
+            if (!ar) ar = Array.prototype.slice.call(from, 0, i);
+            ar[i] = from[i];
+        }
+    }
+    return to.concat(ar || Array.prototype.slice.call(from));
+};
 import { EventTargetFactory } from 'eventtargeter';
 import { createDOMException } from './DOMException';
 import { createEvent } from './Event';
@@ -156,9 +165,9 @@ IDBDatabase.prototype.transaction = function (storeNames /* , mode */) {
     var mode = arguments[1];
     storeNames = util.isIterable(storeNames)
         // Creating new array also ensures sequence is passed by value: https://heycam.github.io/webidl/#idl-sequence
-        ? new Set(// to be unique
+        ? __spreadArray([], new Set(// to be unique
         util.convertToSequenceDOMString(storeNames) // iterables have `ToString` applied (and we convert to array for convenience)
-        ).slice().sort() // must be sorted
+        ), true).sort() // must be sorted
         : [util.convertToDOMString(storeNames)];
     /* (function () {
         throw new TypeError('You must supply a valid `storeNames` to `IDBDatabase.transaction`');

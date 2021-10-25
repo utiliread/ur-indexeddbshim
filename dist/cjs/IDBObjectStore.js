@@ -1,4 +1,13 @@
 "use strict";
+var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
+    if (pack || arguments.length === 2) for (var i = 0, l = from.length, ar; i < l; i++) {
+        if (ar || !(i in from)) {
+            if (!ar) ar = Array.prototype.slice.call(from, 0, i);
+            ar[i] = from[i];
+        }
+    }
+    return to.concat(ar || Array.prototype.slice.call(from));
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 var sync_promise_1 = require("sync-promise");
 var DOMException_1 = require("./DOMException");
@@ -71,7 +80,7 @@ IDBObjectStore.__createInstance = function (storeProperties, transaction) {
                     return;
                 }
                 if (me.__idbdb.__objectStores[name] && !me.__idbdb.__objectStores[name].__pendingDelete) {
-                    throw DOMException_1.createDOMException('ConstraintError', 'Object store "' + name + '" already exists in ' + me.__idbdb.name);
+                    throw (0, DOMException_1.createDOMException)('ConstraintError', 'Object store "' + name + '" already exists in ' + me.__idbdb.name);
                 }
                 me.__name = name;
                 var oldStore = me.__idbdb.__objectStores[oldName];
@@ -127,7 +136,7 @@ IDBObjectStore.__clone = function (store, transaction) {
 };
 IDBObjectStore.__invalidStateIfDeleted = function (store, msg) {
     if (store.__deleted || store.__pendingDelete || (store.__pendingCreate && (store.transaction && store.transaction.__errored))) {
-        throw DOMException_1.createDOMException('InvalidStateError', msg || 'This store has been deleted');
+        throw (0, DOMException_1.createDOMException)('InvalidStateError', msg || 'This store has been deleted');
     }
 };
 /**
@@ -155,7 +164,7 @@ IDBObjectStore.__createObjectStore = function (db, store) {
     transaction.__addNonRequestToTransactionQueue(function createObjectStore(tx, args, success, failure) {
         function error(tx, err) {
             CFG_1.default.DEBUG && console.log(err);
-            failure(DOMException_1.createDOMException('UnknownError', 'Could not create object store "' + storeName + '"', err));
+            failure((0, DOMException_1.createDOMException)('UnknownError', 'Could not create object store "' + storeName + '"', err));
         }
         var escapedStoreNameSQL = util.escapeStoreNameForSQL(storeName);
         // key INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL UNIQUE
@@ -201,7 +210,7 @@ IDBObjectStore.__deleteObjectStore = function (db, store) {
     transaction.__addNonRequestToTransactionQueue(function deleteObjectStore(tx, args, success, failure) {
         function error(tx, err) {
             CFG_1.default.DEBUG && console.log(err);
-            failure(DOMException_1.createDOMException('UnknownError', 'Could not delete ObjectStore', err));
+            failure((0, DOMException_1.createDOMException)('UnknownError', 'Could not delete ObjectStore', err));
         }
         tx.executeSql('SELECT "name" FROM __sys__ WHERE "name" = ?', [util.escapeSQLiteStatement(store.__currentName)], function (tx, data) {
             if (data.rows.length > 0) {
@@ -238,7 +247,7 @@ IDBObjectStore.prototype.__validateKeyAndValueAndCloneValue = function (value, k
     var me = this;
     if (me.keyPath !== null) {
         if (key !== undefined) {
-            throw DOMException_1.createDOMException('DataError', 'The object store uses in-line keys and the key parameter was provided', me);
+            throw (0, DOMException_1.createDOMException)('DataError', 'The object store uses in-line keys and the key parameter was provided', me);
         }
         // Todo Binary: Avoid blobs loading async to ensure cloning (and errors therein)
         //   occurs sync; then can make cloning and this method without callbacks (except where ok
@@ -246,27 +255,27 @@ IDBObjectStore.prototype.__validateKeyAndValueAndCloneValue = function (value, k
         var clonedValue_1 = Sca.clone(value);
         key = Key.extractKeyValueDecodedFromValueUsingKeyPath(clonedValue_1, me.keyPath); // May throw so "rethrow"
         if (key.invalid) {
-            throw DOMException_1.createDOMException('DataError', 'KeyPath was specified, but key was invalid.');
+            throw (0, DOMException_1.createDOMException)('DataError', 'KeyPath was specified, but key was invalid.');
         }
         if (key.failure) {
             if (!cursorUpdate) {
                 if (!me.autoIncrement) {
-                    throw DOMException_1.createDOMException('DataError', 'Could not evaluate a key from keyPath and there is no key generator');
+                    throw (0, DOMException_1.createDOMException)('DataError', 'Could not evaluate a key from keyPath and there is no key generator');
                 }
                 if (!Key.checkKeyCouldBeInjectedIntoValue(clonedValue_1, me.keyPath)) {
-                    throw DOMException_1.createDOMException('DataError', 'A key could not be injected into a value');
+                    throw (0, DOMException_1.createDOMException)('DataError', 'A key could not be injected into a value');
                 }
                 // A key will be generated
                 return [undefined, clonedValue_1];
             }
-            throw DOMException_1.createDOMException('DataError', 'Could not evaluate a key from keyPath');
+            throw (0, DOMException_1.createDOMException)('DataError', 'Could not evaluate a key from keyPath');
         }
         // An `IDBCursor.update` call will also throw if not equal to the cursor’s effective key
         return [key.value, clonedValue_1];
     }
     if (key === undefined) {
         if (!me.autoIncrement) {
-            throw DOMException_1.createDOMException('DataError', 'The object store uses out-of-line keys and has no key generator and the key parameter was not provided.', me);
+            throw (0, DOMException_1.createDOMException)('DataError', 'The object store uses out-of-line keys and has no key generator and the key parameter was not provided.', me);
         }
         // A key will be generated
         key = undefined;
@@ -301,7 +310,7 @@ IDBObjectStore.prototype.__deriveKey = function (tx, value, key, success, failCb
         if (key === undefined) {
             Key.generateKeyForStore(tx, me, function (failure, key, oldCn) {
                 if (failure) {
-                    failCb(DOMException_1.createDOMException('ConstraintError', 'The key generator\'s current number has reached the maximum safe integer limit'));
+                    failCb((0, DOMException_1.createDOMException)('ConstraintError', 'The key generator\'s current number has reached the maximum safe integer limit'));
                     return;
                 }
                 if (me.keyPath !== null) {
@@ -373,17 +382,17 @@ IDBObjectStore.prototype.__insertData = function (tx, encoded, value, clonedKeyO
             }
             if (index.unique) {
                 var multiCheck_1 = index.multiEntry && Array.isArray(indexKey);
-                var fetchArgs = IDBIndex_1.buildFetchIndexDataSQL(true, index, indexKey, 'key', multiCheck_1);
-                IDBIndex_1.executeFetchIndexData.apply(void 0, [null].concat(fetchArgs, [tx, null, function success(key) {
+                var fetchArgs = (0, IDBIndex_1.buildFetchIndexDataSQL)(true, index, indexKey, 'key', multiCheck_1);
+                IDBIndex_1.executeFetchIndexData.apply(void 0, __spreadArray(__spreadArray([null], fetchArgs, false), [tx, null, function success(key) {
                         if (key === undefined) {
                             setIndexInfo(index);
                             resolve();
                             return;
                         }
-                        reject(DOMException_1.createDOMException('ConstraintError', 'Index already contains a record equal to ' +
+                        reject((0, DOMException_1.createDOMException)('ConstraintError', 'Index already contains a record equal to ' +
                             (multiCheck_1 ? 'one of the subkeys of' : '') +
                             '`indexKey`'));
-                    }, reject]));
+                    }, reject], false));
             }
             else {
                 setIndexInfo(index);
@@ -417,7 +426,7 @@ IDBObjectStore.prototype.__insertData = function (tx, encoded, value, clonedKeyO
             success(clonedKeyOrCurrentNumber);
         }, function (tx, err) {
             // Should occur for `add` operation
-            error(DOMException_1.createDOMException('ConstraintError', err.message, err));
+            error((0, DOMException_1.createDOMException)('ConstraintError', err.message, err));
         });
         return undefined;
     }).catch(function (err) {
@@ -514,13 +523,13 @@ IDBObjectStore.prototype.__get = function (query, getKey, getAll, count) {
     }
     IDBObjectStore.__invalidStateIfDeleted(me);
     IDBTransaction_1.default.__assertActive(me.transaction);
-    var range = IDBKeyRange_1.convertValueToKeyRange(query, !getAll);
+    var range = (0, IDBKeyRange_1.convertValueToKeyRange)(query, !getAll);
     var col = getKey ? 'key' : 'value';
     var sql = ['SELECT', util.sqlQuote(col), 'FROM', util.escapeStoreNameForSQL(me.__currentName)];
     var sqlValues = [];
     if (range !== undefined) {
         sql.push('WHERE');
-        IDBKeyRange_1.setSQLForKeyRange(range, util.sqlQuote('key'), sql, sqlValues);
+        (0, IDBKeyRange_1.setSQLForKeyRange)(range, util.sqlQuote('key'), sql, sqlValues);
     }
     if (!getAll) {
         count = 1;
@@ -605,10 +614,10 @@ IDBObjectStore.prototype.delete = function (query) {
     IDBObjectStore.__invalidStateIfDeleted(me);
     IDBTransaction_1.default.__assertActive(me.transaction);
     me.transaction.__assertWritable();
-    var range = IDBKeyRange_1.convertValueToKeyRange(query, true);
+    var range = (0, IDBKeyRange_1.convertValueToKeyRange)(query, true);
     var sqlArr = ['DELETE FROM', util.escapeStoreNameForSQL(me.__currentName), 'WHERE'];
     var sqlValues = [];
-    IDBKeyRange_1.setSQLForKeyRange(range, util.sqlQuote('key'), sqlArr, sqlValues);
+    (0, IDBKeyRange_1.setSQLForKeyRange)(range, util.sqlQuote('key'), sqlArr, sqlValues);
     var sql = sqlArr.join(' ');
     return me.transaction.__addToTransactionQueue(function objectStoreDelete(tx, args, success, error) {
         CFG_1.default.DEBUG && console.log('Deleting', me.__currentName, sqlValues);
@@ -688,7 +697,7 @@ IDBObjectStore.prototype.index = function (indexName) {
     IDBTransaction_1.default.__assertNotFinished(me.transaction);
     var index = me.__indexes[indexName];
     if (!index || index.__deleted) {
-        throw DOMException_1.createDOMException('NotFoundError', 'Index "' + indexName + '" does not exist on ' + me.__currentName);
+        throw (0, DOMException_1.createDOMException)('NotFoundError', 'Index "' + indexName + '" does not exist on ' + me.__currentName);
     }
     if (!me.__indexHandles[indexName] ||
         me.__indexes[indexName].__pendingDelete ||
@@ -721,14 +730,14 @@ IDBObjectStore.prototype.createIndex = function (indexName, keyPath /* , optiona
     IDBObjectStore.__invalidStateIfDeleted(me);
     IDBTransaction_1.default.__assertActive(me.transaction);
     if (me.__indexes[indexName] && !me.__indexes[indexName].__deleted && !me.__indexes[indexName].__pendingDelete) {
-        throw DOMException_1.createDOMException('ConstraintError', 'Index "' + indexName + '" already exists on ' + me.__currentName);
+        throw (0, DOMException_1.createDOMException)('ConstraintError', 'Index "' + indexName + '" already exists on ' + me.__currentName);
     }
     keyPath = util.convertToSequenceDOMString(keyPath);
     if (!util.isValidKeyPath(keyPath)) {
-        throw DOMException_1.createDOMException('SyntaxError', 'A valid keyPath must be supplied');
+        throw (0, DOMException_1.createDOMException)('SyntaxError', 'A valid keyPath must be supplied');
     }
     if (Array.isArray(keyPath) && optionalParameters && optionalParameters.multiEntry) {
-        throw DOMException_1.createDOMException('InvalidAccessError', 'The keyPath argument was an array and the multiEntry option is true.');
+        throw (0, DOMException_1.createDOMException)('InvalidAccessError', 'The keyPath argument was an array and the multiEntry option is true.');
     }
     optionalParameters = optionalParameters || {};
     /** @name IDBIndexProperties **/
@@ -757,7 +766,7 @@ IDBObjectStore.prototype.deleteIndex = function (name) {
     IDBTransaction_1.default.__assertActive(me.transaction);
     var index = me.__indexes[name];
     if (!index) {
-        throw DOMException_1.createDOMException('NotFoundError', 'Index "' + name + '" does not exist on ' + me.__currentName);
+        throw (0, DOMException_1.createDOMException)('NotFoundError', 'Index "' + name + '" does not exist on ' + me.__currentName);
     }
     IDBIndex_1.IDBIndex.__deleteIndex(me, index);
 };

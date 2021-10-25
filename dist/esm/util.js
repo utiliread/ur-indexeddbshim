@@ -1,3 +1,12 @@
+var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
+    if (pack || arguments.length === 2) for (var i = 0, l = from.length, ar; i < l; i++) {
+        if (ar || !(i in from)) {
+            if (!ar) ar = Array.prototype.slice.call(from, 0, i);
+            ar[i] = from[i];
+        }
+    }
+    return to.concat(ar || Array.prototype.slice.call(from));
+};
 import CFG from './CFG';
 import expandsOnNFD from './unicode-regex';
 function escapeUnmatchedSurrogates(arg) {
@@ -171,14 +180,14 @@ function defineOuterInterface(obj, props) {
                 get: function () {
                     throw new TypeError('Illegal invocation');
                 },
-                enumerable: true,
+                enumerable: false,
                 configurable: true
             }),
             Object.defineProperty(_a, prop, {
                 set: function (val) {
                     throw new TypeError('Illegal invocation');
                 },
-                enumerable: true,
+                enumerable: false,
                 configurable: true
             }),
             _a);
@@ -194,7 +203,7 @@ function defineReadonlyOuterInterface(obj, props) {
                 get: function () {
                     throw new TypeError('Illegal invocation');
                 },
-                enumerable: true,
+                enumerable: false,
                 configurable: true
             }),
             _a);
@@ -211,14 +220,14 @@ function defineListenerProperties(obj, listeners) {
                 get: function () {
                     return obj['__' + listener];
                 },
-                enumerable: true,
+                enumerable: false,
                 configurable: true
             }),
             Object.defineProperty(_a, listener, {
                 set: function (val) {
                     obj['__' + listener] = val;
                 },
-                enumerable: true,
+                enumerable: false,
                 configurable: true
             }),
             _a);
@@ -247,7 +256,7 @@ function defineReadonlyProperties(obj, props) {
                 get: function () {
                     return this['__' + prop];
                 },
-                enumerable: true,
+                enumerable: false,
                 configurable: true
             }),
             _a);
@@ -277,7 +286,7 @@ function isValidKeyPath(keyPath) {
     return isValidKeyPathString(keyPath) || (Array.isArray(keyPath) && keyPath.length &&
         // Convert array from sparse to dense http://www.2ality.com/2012/06/dense-arrays.html
         // See also https://heycam.github.io/webidl/#idl-DOMString
-        keyPath.slice().every(isValidKeyPathString) // eslint-disable-line prefer-spread
+        __spreadArray([], keyPath, true).every(isValidKeyPathString) // eslint-disable-line prefer-spread
     );
 }
 function enforceRange(number, type) {
@@ -315,7 +324,7 @@ function convertToSequenceDOMString(val) {
     // Per <https://heycam.github.io/webidl/#idl-sequence>, converting to a sequence works with iterables
     if (isIterable(val)) { // We don't want conversion to array to convert primitives
         // Per <https://heycam.github.io/webidl/#es-DOMString>, converting to a `DOMString` to be via `ToString`: https://tc39.github.io/ecma262/#sec-tostring
-        return val.slice().map(ToString);
+        return __spreadArray([], val, true).map(ToString);
     }
     return ToString(val);
 }

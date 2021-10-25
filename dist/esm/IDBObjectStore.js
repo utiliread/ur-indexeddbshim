@@ -1,3 +1,12 @@
+var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
+    if (pack || arguments.length === 2) for (var i = 0, l = from.length, ar; i < l; i++) {
+        if (ar || !(i in from)) {
+            if (!ar) ar = Array.prototype.slice.call(from, 0, i);
+            ar[i] = from[i];
+        }
+    }
+    return to.concat(ar || Array.prototype.slice.call(from));
+};
 import SyncPromise from 'sync-promise';
 import { createDOMException } from './DOMException';
 import { IDBCursor, IDBCursorWithValue } from './IDBCursor';
@@ -372,7 +381,7 @@ IDBObjectStore.prototype.__insertData = function (tx, encoded, value, clonedKeyO
             if (index.unique) {
                 var multiCheck_1 = index.multiEntry && Array.isArray(indexKey);
                 var fetchArgs = buildFetchIndexDataSQL(true, index, indexKey, 'key', multiCheck_1);
-                executeFetchIndexData.apply(void 0, [null].concat(fetchArgs, [tx, null, function success(key) {
+                executeFetchIndexData.apply(void 0, __spreadArray(__spreadArray([null], fetchArgs, false), [tx, null, function success(key) {
                         if (key === undefined) {
                             setIndexInfo(index);
                             resolve();
@@ -381,7 +390,7 @@ IDBObjectStore.prototype.__insertData = function (tx, encoded, value, clonedKeyO
                         reject(createDOMException('ConstraintError', 'Index already contains a record equal to ' +
                             (multiCheck_1 ? 'one of the subkeys of' : '') +
                             '`indexKey`'));
-                    }, reject]));
+                    }, reject], false));
             }
             else {
                 setIndexInfo(index);

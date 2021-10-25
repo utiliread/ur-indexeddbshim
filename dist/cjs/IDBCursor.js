@@ -1,5 +1,15 @@
 "use strict";
+var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
+    if (pack || arguments.length === 2) for (var i = 0, l = from.length, ar; i < l; i++) {
+        if (ar || !(i in from)) {
+            if (!ar) ar = Array.prototype.slice.call(from, 0, i);
+            ar[i] = from[i];
+        }
+    }
+    return to.concat(ar || Array.prototype.slice.call(from));
+};
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.IDBCursorWithValue = exports.IDBCursor = void 0;
 var IDBRequest_1 = require("./IDBRequest");
 var IDBObjectStore_1 = require("./IDBObjectStore");
 var DOMException_1 = require("./DOMException");
@@ -35,7 +45,7 @@ IDBCursor.__super = function IDBCursor(query, direction, store, source, keyColum
     if (this.__indexSource)
         IDBIndex_1.default.__invalidStateIfDeleted(source);
     IDBTransaction_1.default.__assertActive(store.transaction);
-    var range = IDBKeyRange_1.convertValueToKeyRange(query);
+    var range = (0, IDBKeyRange_1.convertValueToKeyRange)(query);
     if (direction !== undefined && !(['next', 'prev', 'nextunique', 'prevunique'].includes(direction))) {
         throw new TypeError(direction + 'is not a valid cursor direction');
     }
@@ -75,7 +85,7 @@ IDBCursor.__createInstance = function () {
     }
     var IDBCursor = IDBCursorAlias.__super;
     IDBCursor.prototype = IDBCursorAlias.prototype;
-    return new (IDBCursor.bind.apply(IDBCursor, [void 0].concat(args)))();
+    return new (IDBCursor.bind.apply(IDBCursor, __spreadArray([void 0], args, false)))();
 };
 IDBCursor.prototype.__find = function () {
     var args = []; /* key, tx, success, error, recordsToLoad */
@@ -98,7 +108,7 @@ IDBCursor.prototype.__findBasic = function (key, primaryKey, tx, success, error,
     var sql = ['SELECT * FROM', util.escapeStoreNameForSQL(me.__store.__currentName)];
     var sqlValues = [];
     sql.push('WHERE', quotedKeyColumnName, 'NOT NULL');
-    IDBKeyRange_1.setSQLForKeyRange(me.__range, quotedKeyColumnName, sql, sqlValues, true, true);
+    (0, IDBKeyRange_1.setSQLForKeyRange)(me.__range, quotedKeyColumnName, sql, sqlValues, true, true);
     // Determine the ORDER BY direction based on the cursor.
     var direction = me.__sqlDirection;
     var op = direction === 'ASC' ? '>' : '<';
@@ -346,15 +356,15 @@ IDBCursor.prototype.__continue = function (key, advanceContinue) {
     IDBTransaction_1.default.__assertActive(me.__store.transaction);
     me.__sourceOrEffectiveObjStoreDeleted();
     if (!me.__gotValue && !advanceContinue) {
-        throw DOMException_1.createDOMException('InvalidStateError', 'The cursor is being iterated or has iterated past its end.');
+        throw (0, DOMException_1.createDOMException)('InvalidStateError', 'The cursor is being iterated or has iterated past its end.');
     }
     if (key !== undefined) {
         Key.convertValueToKeyRethrowingAndIfInvalid(key);
-        var cmpResult = IDBFactory_1.cmp(key, me.key);
+        var cmpResult = (0, IDBFactory_1.cmp)(key, me.key);
         if (cmpResult === 0 ||
             (me.direction.includes('next') && cmpResult === -1) ||
             (me.direction.includes('prev') && cmpResult === 1)) {
-            throw DOMException_1.createDOMException('DataError', 'Cannot ' + (advanceState ? 'advance' : 'continue') + ' the cursor in an unexpected direction');
+            throw (0, DOMException_1.createDOMException)('DataError', 'Cannot ' + (advanceState ? 'advance' : 'continue') + ' the cursor in an unexpected direction');
         }
     }
     this.__continueFinish(key, undefined, advanceState);
@@ -384,8 +394,8 @@ IDBCursor.prototype.__continueFinish = function (key, primaryKey, advanceState) 
             if (me.__prefetchedIndex < me.__prefetchedData.length) {
                 me.__decode(me.__prefetchedData.item(me.__prefetchedIndex), function (k, val, primKey, encKey) {
                     function checkKey() {
-                        var cmpResult = key === undefined || IDBFactory_1.cmp(k, key);
-                        if (cmpResult > 0 || (cmpResult === 0 && (me.__unique || primaryKey === undefined || IDBFactory_1.cmp(primKey, primaryKey) >= 0))) {
+                        var cmpResult = key === undefined || (0, IDBFactory_1.cmp)(k, key);
+                        if (cmpResult > 0 || (cmpResult === 0 && (me.__unique || primaryKey === undefined || (0, IDBFactory_1.cmp)(primKey, primaryKey) >= 0))) {
                             triggerSuccess(k, val, primKey);
                             return;
                         }
@@ -420,20 +430,20 @@ IDBCursor.prototype.continuePrimaryKey = function (key, primaryKey) {
     IDBTransaction_1.default.__assertActive(me.__store.transaction);
     me.__sourceOrEffectiveObjStoreDeleted();
     if (!me.__indexSource) {
-        throw DOMException_1.createDOMException('InvalidAccessError', '`continuePrimaryKey` may only be called on an index source.');
+        throw (0, DOMException_1.createDOMException)('InvalidAccessError', '`continuePrimaryKey` may only be called on an index source.');
     }
     if (!['next', 'prev'].includes(me.direction)) {
-        throw DOMException_1.createDOMException('InvalidAccessError', '`continuePrimaryKey` may not be called with unique cursors.');
+        throw (0, DOMException_1.createDOMException)('InvalidAccessError', '`continuePrimaryKey` may not be called with unique cursors.');
     }
     if (!me.__gotValue) {
-        throw DOMException_1.createDOMException('InvalidStateError', 'The cursor is being iterated or has iterated past its end.');
+        throw (0, DOMException_1.createDOMException)('InvalidStateError', 'The cursor is being iterated or has iterated past its end.');
     }
     Key.convertValueToKeyRethrowingAndIfInvalid(key);
     Key.convertValueToKeyRethrowingAndIfInvalid(primaryKey);
-    var cmpResult = IDBFactory_1.cmp(key, me.key);
+    var cmpResult = (0, IDBFactory_1.cmp)(key, me.key);
     if ((me.direction === 'next' && cmpResult === -1) ||
         (me.direction === 'prev' && cmpResult === 1)) {
-        throw DOMException_1.createDOMException('DataError', 'Cannot continue the cursor in an unexpected direction');
+        throw (0, DOMException_1.createDOMException)('DataError', 'Cannot continue the cursor in an unexpected direction');
     }
     function noErrors() {
         me.__continueFinish(key, primaryKey, false);
@@ -444,7 +454,7 @@ IDBCursor.prototype.continuePrimaryKey = function (key, primaryKey) {
                 if (encPrimaryKey === encObjectStorePos ||
                     (me.direction === 'next' && encPrimaryKey < encObjectStorePos) ||
                     (me.direction === 'prev' && encPrimaryKey > encObjectStorePos)) {
-                    throw DOMException_1.createDOMException('DataError', 'Cannot continue the cursor in an unexpected direction');
+                    throw (0, DOMException_1.createDOMException)('DataError', 'Cannot continue the cursor in an unexpected direction');
                 }
                 noErrors();
             });
@@ -473,10 +483,10 @@ IDBCursor.prototype.update = function (valueToUpdate) {
     me.__store.transaction.__assertWritable();
     me.__sourceOrEffectiveObjStoreDeleted();
     if (!me.__gotValue) {
-        throw DOMException_1.createDOMException('InvalidStateError', 'The cursor is being iterated or has iterated past its end.');
+        throw (0, DOMException_1.createDOMException)('InvalidStateError', 'The cursor is being iterated or has iterated past its end.');
     }
     if (me.__keyOnly) {
-        throw DOMException_1.createDOMException('InvalidStateError', 'This cursor method cannot be called when the key only flag has been set.');
+        throw (0, DOMException_1.createDOMException)('InvalidStateError', 'This cursor method cannot be called when the key only flag has been set.');
     }
     var request = me.__store.transaction.__createRequest(me);
     var key = me.primaryKey;
@@ -486,8 +496,8 @@ IDBCursor.prototype.update = function (valueToUpdate) {
     }
     if (me.__store.keyPath !== null) {
         var _a = me.__store.__validateKeyAndValueAndCloneValue(valueToUpdate, undefined, true), evaluatedKey = _a[0], clonedValue = _a[1];
-        if (IDBFactory_1.cmp(me.primaryKey, evaluatedKey) !== 0) {
-            throw DOMException_1.createDOMException('DataError', 'The key of the supplied value to `update` is not equal to the cursor\'s effective key');
+        if ((0, IDBFactory_1.cmp)(me.primaryKey, evaluatedKey) !== 0) {
+            throw (0, DOMException_1.createDOMException)('DataError', 'The key of the supplied value to `update` is not equal to the cursor\'s effective key');
         }
         addToQueue(clonedValue);
     }
@@ -503,10 +513,10 @@ IDBCursor.prototype.delete = function () {
     me.__store.transaction.__assertWritable();
     me.__sourceOrEffectiveObjStoreDeleted();
     if (!me.__gotValue) {
-        throw DOMException_1.createDOMException('InvalidStateError', 'The cursor is being iterated or has iterated past its end.');
+        throw (0, DOMException_1.createDOMException)('InvalidStateError', 'The cursor is being iterated or has iterated past its end.');
     }
     if (me.__keyOnly) {
-        throw DOMException_1.createDOMException('InvalidStateError', 'This cursor method cannot be called when the key only flag has been set.');
+        throw (0, DOMException_1.createDOMException)('InvalidStateError', 'This cursor method cannot be called when the key only flag has been set.');
     }
     return this.__store.transaction.__addToTransactionQueue(function cursorDelete(tx, args, success, error) {
         me.__find(undefined, undefined, tx, function (key, value, primaryKey) {
@@ -552,7 +562,7 @@ IDBCursorWithValue.__createInstance = function () {
     }
     function IDBCursorWithValue() {
         var _a;
-        (_a = IDBCursor.__super).call.apply(_a, [this].concat(args));
+        (_a = IDBCursor.__super).call.apply(_a, __spreadArray([this], args, false));
         this[Symbol.toStringTag] = 'IDBCursorWithValue';
         util.defineReadonlyProperties(this, 'value');
     }

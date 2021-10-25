@@ -9,15 +9,15 @@ var Key_1 = require("./Key");
  * @returns {number}
  */
 function cmp(first, second) {
-    var encodedKey1 = Key_1.encode(first);
-    var encodedKey2 = Key_1.encode(second);
+    var encodedKey1 = (0, Key_1.encode)(first);
+    var encodedKey2 = (0, Key_1.encode)(second);
     var result = encodedKey1 > encodedKey2
         ? 1
         : encodedKey1 === encodedKey2 ? 0 : -1;
     if (CFG_1.default.DEBUG) {
         // verify that the keys encoded correctly
-        var decodedKey1 = Key_1.decode(encodedKey1);
-        var decodedKey2 = Key_1.decode(encodedKey2);
+        var decodedKey1 = (0, Key_1.decode)(encodedKey1);
+        var decodedKey2 = (0, Key_1.decode)(encodedKey2);
         if (typeof first === 'object') {
             first = JSON.stringify(first);
             decodedKey1 = JSON.stringify(decodedKey1);

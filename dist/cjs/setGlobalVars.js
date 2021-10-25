@@ -1,12 +1,13 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.createDOMException = void 0;
 /* globals self */
 var eventtargeter_1 = require("eventtargeter");
 var IDBVersionChangeEvent_1 = require("./IDBVersionChangeEvent");
 var IDBCursor_1 = require("./IDBCursor");
 var IDBRequest_1 = require("./IDBRequest");
 var DOMException_1 = require("./DOMException");
-exports.createDOMException = DOMException_1.createDOMException;
+Object.defineProperty(exports, "createDOMException", { enumerable: true, get: function () { return DOMException_1.createDOMException; } });
 var IDBFactory_1 = require("./IDBFactory");
 var DOMStringList_1 = require("./DOMStringList");
 var Event_1 = require("./Event");
@@ -31,7 +32,7 @@ function setConfig(prop, val) {
     }
     CFG_1.default[prop] = val;
     if (prop === 'registerSCA' && typeof val === 'function') {
-        Sca_1.register(val);
+        (0, Sca_1.register)(val);
     }
 }
 function setGlobalVars(idb, initialConfig) {
@@ -68,7 +69,7 @@ function setGlobalVars(idb, initialConfig) {
                             get: function () {
                                 return propDesc.get.call(this);
                             },
-                            enumerable: true,
+                            enumerable: false,
                             configurable: true
                         }),
                         _a);
@@ -130,7 +131,7 @@ function setGlobalVars(idb, initialConfig) {
                     enumerable: true,
                     configurable: true,
                     get: function () {
-                        if (this !== IDB && !util_1.isNullish(this) && !this.shimNS) { // Latter is hack for test environment
+                        if (this !== IDB && !(0, util_1.isNullish)(this) && !this.shimNS) { // Latter is hack for test environment
                             throw new TypeError('Illegal invocation');
                         }
                         return IDBFactory_1.shimIndexedDB;
@@ -165,7 +166,7 @@ function setGlobalVars(idb, initialConfig) {
                     Object.setPrototypeOf(IDBVersionChangeEvent_1.default, Event_1.ShimEvent);
                     Object.setPrototypeOf(DOMException_1.ShimDOMException, Error);
                     Object.setPrototypeOf(DOMException_1.ShimDOMException.prototype, Error.prototype);
-                    eventtargeter_1.setPrototypeOfCustomEvent();
+                    (0, eventtargeter_1.setPrototypeOfCustomEvent)();
                 }
                 if (IDB.indexedDB && !IDB.indexedDB.toString().includes('[native code]')) {
                     if (CFG_1.default.addNonIDBGlobals) {

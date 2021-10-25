@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.webSQLErrback = exports.createDOMException = exports.ShimDOMException = exports.findError = exports.logError = void 0;
 /* globals DOMException */
 var CFG_1 = require("./CFG");
 /**

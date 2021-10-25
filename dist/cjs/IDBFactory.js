@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.shimIndexedDB = exports.cmp = exports.IDBFactory = void 0;
 /* globals location, Event */
 var path_1 = require("path");
 var sync_promise_1 = require("sync-promise");
@@ -180,7 +181,7 @@ function cleanupDatabaseResources(__openDatabase, name, escapedDatabaseName, dat
  **/
 function createSysDB(__openDatabase, success, failure) {
     function sysDbCreateError(tx, err) {
-        err = DOMException_1.webSQLErrback(err || tx);
+        err = (0, DOMException_1.webSQLErrback)(err || tx);
         CFG_1.default.DEBUG && console.log('Error in sysdb transaction - when creating dbVersions', err);
         failure(err);
     }
@@ -243,7 +244,7 @@ IDBFactory.prototype.open = function (name /* , version */) {
         }
     }
     if (hasNullOrigin()) {
-        throw DOMException_1.createDOMException('SecurityError', 'Cannot open an IndexedDB database from an opaque origin.');
+        throw (0, DOMException_1.createDOMException)('SecurityError', 'Cannot open an IndexedDB database from an opaque origin.');
     }
     var req = IDBRequest_1.IDBOpenDBRequest.__createInstance();
     var calledDbCreateError = false;
@@ -265,10 +266,10 @@ IDBFactory.prototype.open = function (name /* , version */) {
         if (calledDbCreateError) {
             return;
         }
-        err = err ? DOMException_1.webSQLErrback(err) : tx;
+        err = err ? (0, DOMException_1.webSQLErrback)(err) : tx;
         calledDbCreateError = true;
         // Re: why bubbling here (and how cancelable is only really relevant for `window.onerror`) see: https://github.com/w3c/IndexedDB/issues/86
-        var evt = Event_1.createEvent('error', err, { bubbles: true, cancelable: true });
+        var evt = (0, Event_1.createEvent)('error', err, { bubbles: true, cancelable: true });
         req.__readyState = 'done';
         req.__error = err;
         req.__result = undefined; // Must be undefined if an error per `result` getter
@@ -326,8 +327,8 @@ IDBFactory.prototype.open = function (name /* , version */) {
                             req.transaction.__addNonRequestToTransactionQueue(function onupgradeneeded(tx, args, finished, error) {
                                 req.dispatchEvent(e);
                                 if (e.__legacyOutputDidListenersThrowError) {
-                                    DOMException_1.logError('Error', 'An error occurred in an upgradeneeded handler attached to request chain', e.__legacyOutputDidListenersThrowError); // We do nothing else with this error as per spec
-                                    req.transaction.__abortTransaction(DOMException_1.createDOMException('AbortError', 'A request was aborted.'));
+                                    (0, DOMException_1.logError)('Error', 'An error occurred in an upgradeneeded handler attached to request chain', e.__legacyOutputDidListenersThrowError); // We do nothing else with this error as per spec
+                                    req.transaction.__abortTransaction((0, DOMException_1.createDOMException)('AbortError', 'A request was aborted.'));
                                     return;
                                 }
                                 finished();
@@ -360,7 +361,7 @@ IDBFactory.prototype.open = function (name /* , version */) {
                                 req.__readyState = 'pending';
                                 connection.close();
                                 setTimeout(function () {
-                                    var err = DOMException_1.createDOMException('AbortError', 'The upgrade transaction was aborted.');
+                                    var err = (0, DOMException_1.createDOMException)('AbortError', 'The upgrade transaction was aborted.');
                                     sysdbFinishedCb(systx, err, function (reportError) {
                                         if (oldVersion === 0) {
                                             cleanupDatabaseResources(me.__openDatabase, name, escapedDatabaseName, dbCreateError.bind(null, err), reportError || dbCreateError);
@@ -373,7 +374,7 @@ IDBFactory.prototype.open = function (name /* , version */) {
                             req.transaction.on__complete = function () {
                                 if (req.__result.__closed) {
                                     req.__transaction = null;
-                                    var err = DOMException_1.createDOMException('AbortError', 'The connection has been closed.');
+                                    var err = (0, DOMException_1.createDOMException)('AbortError', 'The connection has been closed.');
                                     dbCreateError(err);
                                     return;
                                 }
@@ -390,7 +391,7 @@ IDBFactory.prototype.open = function (name /* , version */) {
                                 // setTimeout(() => {
                                 finishRequest();
                                 req.__transaction = null;
-                                var e = Event_1.createEvent('success');
+                                var e = (0, Event_1.createEvent)('success');
                                 req.dispatchEvent(e);
                                 // });
                             };
@@ -423,7 +424,7 @@ IDBFactory.prototype.open = function (name /* , version */) {
             }
             else {
                 finishRequest();
-                var e = Event_1.createEvent('success');
+                var e = (0, Event_1.createEvent)('success');
                 req.dispatchEvent(e);
             }
         }, dbCreateError);
@@ -443,7 +444,7 @@ IDBFactory.prototype.open = function (name /* , version */) {
             version = oldVersion || 1;
         }
         if (oldVersion > version) {
-            var err_1 = DOMException_1.createDOMException('VersionError', 'An attempt was made to open a database using a lower version than the existing version.', version);
+            var err_1 = (0, DOMException_1.createDOMException)('VersionError', 'An attempt was made to open a database using a lower version than the existing version.', version);
             if (useDatabaseCache) {
                 setTimeout(function () {
                     dbCreateError(err_1);
@@ -510,7 +511,7 @@ IDBFactory.prototype.deleteDatabase = function (name) {
         throw new TypeError('Database name is required');
     }
     if (hasNullOrigin()) {
-        throw DOMException_1.createDOMException('SecurityError', 'Cannot delete an IndexedDB database from an opaque origin.');
+        throw (0, DOMException_1.createDOMException)('SecurityError', 'Cannot delete an IndexedDB database from an opaque origin.');
     }
     name = String(name); // cast to a string
     var sqlSafeName = util.escapeSQLiteStatement(name);
@@ -536,13 +537,13 @@ IDBFactory.prototype.deleteDatabase = function (name) {
         if (calledDBError || err === true) {
             return;
         }
-        err = DOMException_1.webSQLErrback(err || tx);
+        err = (0, DOMException_1.webSQLErrback)(err || tx);
         sysdbFinishedCbDelete(true, function () {
             req.__readyState = 'done';
             req.__error = err;
             req.__result = undefined; // Must be undefined if an error per `result` getter
             // Re: why bubbling here (and how cancelable is only really relevant for `window.onerror`) see: https://github.com/w3c/IndexedDB/issues/86
-            var e = Event_1.createEvent('error', err, { bubbles: true, cancelable: true });
+            var e = (0, Event_1.createEvent)('error', err, { bubbles: true, cancelable: true });
             req.dispatchEvent(e);
             calledDBError = true;
         });
@@ -622,7 +623,7 @@ IDBFactory.prototype.cmp = function (key1, key2) {
     //   the following "conversions" are for validation only
     Key.convertValueToKeyRethrowingAndIfInvalid(key1);
     Key.convertValueToKeyRethrowingAndIfInvalid(key2);
-    return cmp_1.default(key1, key2);
+    return (0, cmp_1.default)(key1, key2);
 };
 /**
 * May return outdated information if a database has since been deleted
@@ -636,13 +637,13 @@ IDBFactory.prototype.databases = function () {
             throw new TypeError('Illegal invocation');
         }
         if (hasNullOrigin()) {
-            throw DOMException_1.createDOMException('SecurityError', 'Cannot get IndexedDB database names from an opaque origin.');
+            throw (0, DOMException_1.createDOMException)('SecurityError', 'Cannot get IndexedDB database names from an opaque origin.');
         }
         function dbGetDatabaseNamesError(tx, err) {
             if (calledDbCreateError) {
                 return;
             }
-            err = err ? DOMException_1.webSQLErrback(err) : tx;
+            err = err ? (0, DOMException_1.webSQLErrback)(err) : tx;
             calledDbCreateError = true;
             reject(err);
         }

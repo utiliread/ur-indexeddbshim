@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.default = exports.convertValueToKeyRange = exports.IDBKeyRange = exports.setSQLForKeyRange = void 0;
 var DOMException_1 = require("./DOMException");
 var Key = require("./Key");
 var util = require("./util");
@@ -22,7 +23,7 @@ IDBKeyRange.__createInstance = function (lower, upper, lowerOpen, upperOpen) {
     function IDBKeyRange() {
         this[Symbol.toStringTag] = 'IDBKeyRange';
         if (lower === undefined && upper === undefined) {
-            throw DOMException_1.createDOMException('DataError', 'Both arguments to the key range method cannot be undefined');
+            throw (0, DOMException_1.createDOMException)('DataError', 'Both arguments to the key range method cannot be undefined');
         }
         var lowerConverted, upperConverted;
         if (lower !== undefined) {
@@ -35,7 +36,7 @@ IDBKeyRange.__createInstance = function (lower, upper, lowerOpen, upperOpen) {
         }
         if (lower !== undefined && upper !== undefined && lower !== upper) {
             if (Key.encode(lower) > Key.encode(upper)) {
-                throw DOMException_1.createDOMException('DataError', '`lower` must not be greater than `upper` argument in `bound()` call.');
+                throw (0, DOMException_1.createDOMException)('DataError', '`lower` must not be greater than `upper` argument in `bound()` call.');
             }
         }
         this.__lower = lowerConverted;
@@ -99,7 +100,7 @@ readonlyProperties.forEach(function (prop) {
                 }
                 return this['__' + prop];
             },
-            enumerable: true,
+            enumerable: false,
             configurable: true
         }),
         _a);
@@ -153,7 +154,7 @@ function convertValueToKeyRange(value, nullDisallowed) {
     }
     if (util.isNullish(value)) {
         if (nullDisallowed) {
-            throw DOMException_1.createDOMException('DataError', 'No key or range was specified');
+            throw (0, DOMException_1.createDOMException)('DataError', 'No key or range was specified');
         }
         return undefined; // Represents unbounded
     }

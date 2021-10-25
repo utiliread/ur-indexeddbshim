@@ -16,5 +16,5 @@ function wrappedSQLiteDatabase(name) {
     }
     return db;
 }
-var nodeWebSQL = custom_1.default(wrappedSQLiteDatabase);
+var nodeWebSQL = (0, custom_1.default)(wrappedSQLiteDatabase);
 exports.default = nodeWebSQL;

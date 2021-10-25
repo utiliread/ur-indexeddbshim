@@ -23,7 +23,7 @@ readonlyProperties.forEach(function (prop) {
                 }
                 return (this.__eventInitDict && this.__eventInitDict[prop]) || (prop === 'oldVersion' ? 0 : null);
             },
-            enumerable: true,
+            enumerable: false,
             configurable: true
         }),
         _a);

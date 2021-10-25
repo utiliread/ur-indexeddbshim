@@ -1,5 +1,15 @@
 "use strict";
+var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
+    if (pack || arguments.length === 2) for (var i = 0, l = from.length, ar; i < l; i++) {
+        if (ar || !(i in from)) {
+            if (!ar) ar = Array.prototype.slice.call(from, 0, i);
+            ar[i] = from[i];
+        }
+    }
+    return to.concat(ar || Array.prototype.slice.call(from));
+};
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.possiblyUpdateKeyGenerator = exports.generateKeyForStore = exports.assignCurrentNumber = exports.findMultiEntryMatches = exports.isKeyInRange = exports.isMultiEntryMatch = exports.checkKeyCouldBeInjectedIntoValue = exports.injectKeyIntoValueUsingKeyPath = exports.extractKeyValueDecodedFromValueUsingKeyPath = exports.evaluateKeyPathOnValue = exports.extractKeyFromValueUsingKeyPath = exports.convertValueToKeyRethrowingAndIfInvalid = exports.convertValueToMultiEntryKey = exports.convertValueToKey = exports.convertValueToMultiEntryKeyDecoded = exports.convertValueToKeyValueDecoded = exports.convertKeyToValue = exports.roundTrip = exports.decode = exports.encode = void 0;
 var DOMException_1 = require("./DOMException");
 var util = require("./util");
 var cmp_1 = require("./cmp");
@@ -203,7 +213,7 @@ var types = {
     binary: {
         encode: function (key) {
             return keyTypeToEncodedChar.binary + '-' + (key.byteLength
-                ? getCopyBytesHeldByBufferSource(key).slice().map(function (b) { return util.padStart(b, 3, '0'); }) // e.g., '255,005,254,000,001,033'
+                ? __spreadArray([], getCopyBytesHeldByBufferSource(key), true).map(function (b) { return util.padStart(b, 3, '0'); }) // e.g., '255,005,254,000,001,033'
                 : '');
         },
         decode: function (key) {
@@ -389,8 +399,8 @@ function convertValueToKeyValueDecoded(input, seen, multiEntry, fullKeys) {
                         return { value: { type: type, invalid: true, message: 'Bad array entry value-to-key conversion' } };
                     }
                     if (!multiEntry ||
-                        (!fullKeys && keys.every(function (k) { return cmp_1.default(k, key_1.value) !== 0; })) ||
-                        (fullKeys && keys.every(function (k) { return cmp_1.default(k, key_1) !== 0; }))) {
+                        (!fullKeys && keys.every(function (k) { return (0, cmp_1.default)(k, key_1.value) !== 0; })) ||
+                        (fullKeys && keys.every(function (k) { return (0, cmp_1.default)(k, key_1) !== 0; }))) {
                         keys.push(fullKeys ? key_1 : key_1.value);
                     }
                 }
@@ -434,7 +444,7 @@ exports.convertValueToMultiEntryKeyDecoded = convertValueToMultiEntryKeyDecoded;
 function convertValueToKeyRethrowingAndIfInvalid(input, seen) {
     var key = convertValueToKey(input, seen);
     if (key.invalid) {
-        throw DOMException_1.createDOMException('DataError', key.message || 'Not a valid key; type: ' + key.type);
+        throw (0, DOMException_1.createDOMException)('DataError', key.message || 'Not a valid key; type: ' + key.type);
     }
     return key;
 }
@@ -697,7 +707,7 @@ function getCurrentNumber(tx, store, func, sqlFailCb) {
             func(data.rows.item(0).currNum);
         }
     }, function (tx, error) {
-        sqlFailCb(DOMException_1.createDOMException('DataError', 'Could not get the auto increment value for key', error));
+        sqlFailCb((0, DOMException_1.createDOMException)('DataError', 'Could not get the auto increment value for key', error));
     });
 }
 function assignCurrentNumber(tx, store, num, successCb, failCb) {
@@ -707,7 +717,7 @@ function assignCurrentNumber(tx, store, num, successCb, failCb) {
     tx.executeSql(sql, sqlValues, function (tx, data) {
         successCb(num);
     }, function (tx, err) {
-        failCb(DOMException_1.createDOMException('UnknownError', 'Could not set the auto increment value for key', err));
+        failCb((0, DOMException_1.createDOMException)('UnknownError', 'Could not set the auto increment value for key', err));
     });
 }
 exports.assignCurrentNumber = assignCurrentNumber;

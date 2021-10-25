@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.IDBOpenDBRequest = exports.IDBRequest = void 0;
 var eventtargeter_1 = require("eventtargeter");
 var DOMException_1 = require("./DOMException");
 var util = require("./util");
@@ -30,7 +31,7 @@ IDBRequest.__super = function IDBRequest() {
             configurable: true,
             get: function () {
                 if (this.__readyState !== 'done') {
-                    throw DOMException_1.createDOMException('InvalidStateError', "Can't get " + prop + '; the request is still pending.');
+                    throw (0, DOMException_1.createDOMException)('InvalidStateError', "Can't get " + prop + '; the request is still pending.');
                 }
                 return this['__' + prop];
             }

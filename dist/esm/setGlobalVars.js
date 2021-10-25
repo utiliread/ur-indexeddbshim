@@ -65,7 +65,7 @@ function setGlobalVars(idb, initialConfig) {
                             get: function () {
                                 return propDesc.get.call(this);
                             },
-                            enumerable: true,
+                            enumerable: false,
                             configurable: true
                         }),
                         _a);

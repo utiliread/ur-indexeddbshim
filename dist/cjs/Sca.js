@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.register = exports.clone = exports.decode = exports.encode = void 0;
 var typeson_registry_1 = require("typeson-registry");
 var DOMException_1 = require("./DOMException");
 // See: http://stackoverflow.com/questions/42170826/categories-for-rejection-by-the-structured-cloning-algorithm
@@ -24,7 +25,7 @@ function encode(obj, func) {
             //   an alias for `DOMException`; if typeson-registry ever uses our shim
             //   to throw, we can use this condition alone.
             typeson_registry_1.default.hasConstructorOf(err, DOMException_1.ShimDOMException)) {
-            throw DOMException_1.createDOMException('DataCloneError', 'The object cannot be cloned.');
+            throw (0, DOMException_1.createDOMException)('DataCloneError', 'The object cannot be cloned.');
         }
         // We should rethrow non-cloning exceptions like from
         //  throwing getters (as in the W3C test, key-conversion-exceptions.htm)

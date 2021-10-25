@@ -95,7 +95,7 @@ readonlyProperties.forEach(function (prop) {
                 }
                 return this['__' + prop];
             },
-            enumerable: true,
+            enumerable: false,
             configurable: true
         }),
         _a);

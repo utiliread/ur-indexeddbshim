@@ -100,11 +100,11 @@ DOMStringList.prototype = (_a = {
             this.sortList();
         },
         splice: function () {
+            var _a;
             var args = []; /* index, howmany, item1, ..., itemX */
             for (var _i = 0 /* index, howmany, item1, ..., itemX */; _i < arguments.length /* index, howmany, item1, ..., itemX */; _i++ /* index, howmany, item1, ..., itemX */) {
                 args[_i] = arguments[_i]; /* index, howmany, item1, ..., itemX */
             }
-            var _a;
             (_a = this._items).splice.apply(_a, args);
             this._length = this._items.length;
             for (var i in this) {

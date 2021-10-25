@@ -1,3 +1,12 @@
+var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
+    if (pack || arguments.length === 2) for (var i = 0, l = from.length, ar; i < l; i++) {
+        if (ar || !(i in from)) {
+            if (!ar) ar = Array.prototype.slice.call(from, 0, i);
+            ar[i] = from[i];
+        }
+    }
+    return to.concat(ar || Array.prototype.slice.call(from));
+};
 import { IDBRequest } from './IDBRequest';
 import IDBObjectStore from './IDBObjectStore';
 import { createDOMException } from './DOMException';
@@ -72,7 +81,7 @@ IDBCursor.__createInstance = function () {
     }
     var IDBCursor = IDBCursorAlias.__super;
     IDBCursor.prototype = IDBCursorAlias.prototype;
-    return new (IDBCursor.bind.apply(IDBCursor, [void 0].concat(args)))();
+    return new (IDBCursor.bind.apply(IDBCursor, __spreadArray([void 0], args, false)))();
 };
 IDBCursor.prototype.__find = function () {
     var args = []; /* key, tx, success, error, recordsToLoad */
@@ -548,7 +557,7 @@ IDBCursorWithValue.__createInstance = function () {
     }
     function IDBCursorWithValue() {
         var _a;
-        (_a = IDBCursor.__super).call.apply(_a, [this].concat(args));
+        (_a = IDBCursor.__super).call.apply(_a, __spreadArray([this], args, false));
         this[Symbol.toStringTag] = 'IDBCursorWithValue';
         util.defineReadonlyProperties(this, 'value');
     }

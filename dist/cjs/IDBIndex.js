@@ -1,5 +1,15 @@
 "use strict";
+var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
+    if (pack || arguments.length === 2) for (var i = 0, l = from.length, ar; i < l; i++) {
+        if (ar || !(i in from)) {
+            if (!ar) ar = Array.prototype.slice.call(from, 0, i);
+            ar[i] = from[i];
+        }
+    }
+    return to.concat(ar || Array.prototype.slice.call(from));
+};
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.default = exports.IDBIndex = exports.executeFetchIndexData = exports.buildFetchIndexDataSQL = void 0;
 var sync_promise_1 = require("sync-promise");
 var DOMException_1 = require("./DOMException");
 var IDBCursor_1 = require("./IDBCursor");
@@ -61,7 +71,7 @@ IDBIndex.__createInstance = function (store, indexProperties) {
                 }
                 if (me.objectStore.__indexes[newName] && !me.objectStore.__indexes[newName].__deleted &&
                     !me.objectStore.__indexes[newName].__pendingDelete) {
-                    throw DOMException_1.createDOMException('ConstraintError', 'Index "' + newName + '" already exists on ' + me.objectStore.__currentName);
+                    throw (0, DOMException_1.createDOMException)('ConstraintError', 'Index "' + newName + '" already exists on ' + me.objectStore.__currentName);
                 }
                 me.__name = newName;
                 var objectStore = me.objectStore;
@@ -76,7 +86,7 @@ IDBIndex.__createInstance = function (store, indexProperties) {
                 var colInfoToPreserveArr = [
                     ['key', 'BLOB ' + (objectStore.autoIncrement ? 'UNIQUE, inc INTEGER PRIMARY KEY AUTOINCREMENT' : 'PRIMARY KEY')],
                     ['value', 'BLOB']
-                ].concat(objectStore.indexNames.slice().filter(function (indexName) { return indexName !== newName; })
+                ].concat(__spreadArray([], objectStore.indexNames, true).filter(function (indexName) { return indexName !== newName; })
                     .map(function (indexName) { return [util.escapeIndexNameForSQL(indexName), 'BLOB']; }));
                 me.__renameIndex(objectStore, oldName, newName, colInfoToPreserveArr, function (tx, success) {
                     IDBIndexAlias.__updateIndexList(store, tx, function (store) {
@@ -92,7 +102,7 @@ IDBIndex.__createInstance = function (store, indexProperties) {
 };
 IDBIndex.__invalidStateIfDeleted = function (index, msg) {
     if (index.__deleted || index.__pendingDelete || (index.__pendingCreate && index.objectStore.transaction && index.objectStore.transaction.__errored)) {
-        throw DOMException_1.createDOMException('InvalidStateError', msg || 'This index has been deleted');
+        throw (0, DOMException_1.createDOMException)('InvalidStateError', msg || 'This index has been deleted');
     }
 };
 /**
@@ -144,7 +154,7 @@ IDBIndex.__createIndex = function (store, index) {
         var columnExists = idx && (idx.__deleted || idx.__recreated); // This check must occur here rather than earlier as properties may not have been set yet otherwise
         var indexValues = {};
         function error(tx, err) {
-            failure(DOMException_1.createDOMException('UnknownError', 'Could not create index "' + indexName + '"' + err.code + '::' + err.message, err));
+            failure((0, DOMException_1.createDOMException)('UnknownError', 'Could not create index "' + indexName + '"' + err.code + '::' + err.message, err));
         }
         function applyIndex(tx) {
             // Update the object store's index list
@@ -165,7 +175,7 @@ IDBIndex.__createIndex = function (store, index) {
                                 if (index.unique) {
                                     if (indexValues[indexKey]) {
                                         indexValues = {};
-                                        failure(DOMException_1.createDOMException('ConstraintError', 'Duplicate values already exist within the store'));
+                                        failure((0, DOMException_1.createDOMException)('ConstraintError', 'Duplicate values already exist within the store'));
                                         return;
                                     }
                                     indexValues[indexKey] = true;
@@ -242,7 +252,7 @@ IDBIndex.__deleteIndex = function (store, index) {
     var transaction = store.transaction;
     transaction.__addNonRequestToTransactionQueue(function deleteIndex(tx, args, success, failure) {
         function error(tx, err) {
-            failure(DOMException_1.createDOMException('UnknownError', 'Could not delete index "' + index.name + '"', err));
+            failure((0, DOMException_1.createDOMException)('UnknownError', 'Could not delete index "' + index.name + '"', err));
         }
         function finishDeleteIndex() {
             // Update the object store's index list
@@ -310,11 +320,11 @@ IDBIndex.prototype.__fetchIndexData = function (range, opType, nullDisallowed, c
     IDBIndex.__invalidStateIfDeleted(me);
     IDBObjectStore_1.default.__invalidStateIfDeleted(me.objectStore);
     if (me.objectStore.__deleted) {
-        throw DOMException_1.createDOMException('InvalidStateError', "This index's object store has been deleted");
+        throw (0, DOMException_1.createDOMException)('InvalidStateError', "This index's object store has been deleted");
     }
     IDBTransaction_1.default.__assertActive(me.objectStore.transaction);
     if (nullDisallowed && util.isNullish(range)) {
-        throw DOMException_1.createDOMException('DataError', 'No key or range was specified');
+        throw (0, DOMException_1.createDOMException)('DataError', 'No key or range was specified');
     }
     var fetchArgs = buildFetchIndexDataSQL(nullDisallowed, me, range, opType, false);
     return me.objectStore.transaction.__addToTransactionQueue(function () {
@@ -322,7 +332,7 @@ IDBIndex.prototype.__fetchIndexData = function (range, opType, nullDisallowed, c
         for (var _i = 0; _i < arguments.length; _i++) {
             args[_i] = arguments[_i];
         }
-        executeFetchIndexData.apply(void 0, [count].concat(fetchArgs, args));
+        executeFetchIndexData.apply(void 0, __spreadArray(__spreadArray([count], fetchArgs, false), args, false));
     }, undefined, me);
 };
 /**
@@ -578,8 +588,8 @@ function buildFetchIndexDataSQL(nullDisallowed, index, range, opType, multiCheck
             sqlValues.push('%' + util.sqlLIKEEscape(Key.encode(range, index.multiEntry)) + '%');
         }
         else {
-            var convertedRange = IDBKeyRange_1.convertValueToKeyRange(range, nullDisallowed);
-            IDBKeyRange_1.setSQLForKeyRange(convertedRange, util.escapeIndexNameForSQL(index.name), sql, sqlValues, true, false);
+            var convertedRange = (0, IDBKeyRange_1.convertValueToKeyRange)(range, nullDisallowed);
+            (0, IDBKeyRange_1.setSQLForKeyRange)(convertedRange, util.escapeIndexNameForSQL(index.name), sql, sqlValues, true, false);
         }
     }
     return [nullDisallowed, index, hasRange, range, opType, multiChecks, sql, sqlValues];

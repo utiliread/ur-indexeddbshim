@@ -1,3 +1,12 @@
+var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
+    if (pack || arguments.length === 2) for (var i = 0, l = from.length, ar; i < l; i++) {
+        if (ar || !(i in from)) {
+            if (!ar) ar = Array.prototype.slice.call(from, 0, i);
+            ar[i] = from[i];
+        }
+    }
+    return to.concat(ar || Array.prototype.slice.call(from));
+};
 import { createDOMException } from './DOMException';
 import * as util from './util';
 import cmp from './cmp';
@@ -201,7 +210,7 @@ var types = {
     binary: {
         encode: function (key) {
             return keyTypeToEncodedChar.binary + '-' + (key.byteLength
-                ? getCopyBytesHeldByBufferSource(key).slice().map(function (b) { return util.padStart(b, 3, '0'); }) // e.g., '255,005,254,000,001,033'
+                ? __spreadArray([], getCopyBytesHeldByBufferSource(key), true).map(function (b) { return util.padStart(b, 3, '0'); }) // e.g., '255,005,254,000,001,033'
                 : '');
         },
         decode: function (key) {

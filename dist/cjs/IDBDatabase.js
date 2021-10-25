@@ -10,6 +10,15 @@ var __assign = (this && this.__assign) || function () {
     };
     return __assign.apply(this, arguments);
 };
+var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
+    if (pack || arguments.length === 2) for (var i = 0, l = from.length, ar; i < l; i++) {
+        if (ar || !(i in from)) {
+            if (!ar) ar = Array.prototype.slice.call(from, 0, i);
+            ar[i] = from[i];
+        }
+    }
+    return to.concat(ar || Array.prototype.slice.call(from));
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 var eventtargeter_1 = require("eventtargeter");
 var DOMException_1 = require("./DOMException");
@@ -95,14 +104,14 @@ IDBDatabase.prototype.createObjectStore = function (storeName /* , createOptions
     var keyPath = createOptions.keyPath;
     keyPath = keyPath === undefined ? null : util.convertToSequenceDOMString(keyPath);
     if (keyPath !== null && !util.isValidKeyPath(keyPath)) {
-        throw DOMException_1.createDOMException('SyntaxError', 'The keyPath argument contains an invalid key path.');
+        throw (0, DOMException_1.createDOMException)('SyntaxError', 'The keyPath argument contains an invalid key path.');
     }
     if (this.__objectStores[storeName] && !this.__objectStores[storeName].__pendingDelete) {
-        throw DOMException_1.createDOMException('ConstraintError', 'Object store "' + storeName + '" already exists in ' + this.name);
+        throw (0, DOMException_1.createDOMException)('ConstraintError', 'Object store "' + storeName + '" already exists in ' + this.name);
     }
     var autoInc = createOptions.autoIncrement;
     if (autoInc && (keyPath === '' || Array.isArray(keyPath))) {
-        throw DOMException_1.createDOMException('InvalidAccessError', 'With autoIncrement set, the keyPath argument must not be an array or empty string.');
+        throw (0, DOMException_1.createDOMException)('InvalidAccessError', 'With autoIncrement set, the keyPath argument must not be an array or empty string.');
     }
     /** @name IDBObjectStoreProperties **/
     var storeProperties = {
@@ -131,7 +140,7 @@ IDBDatabase.prototype.deleteObjectStore = function (storeName) {
     IDBTransaction_1.default.__assertActive(this.__versionTransaction);
     var store = this.__objectStores[storeName];
     if (!store) {
-        throw DOMException_1.createDOMException('NotFoundError', 'Object store "' + storeName + '" does not exist in ' + this.name);
+        throw (0, DOMException_1.createDOMException)('NotFoundError', 'Object store "' + storeName + '" does not exist in ' + this.name);
     }
     IDBObjectStore_1.default.__deleteObjectStore(this, store);
 };
@@ -158,9 +167,9 @@ IDBDatabase.prototype.transaction = function (storeNames /* , mode */) {
     var mode = arguments[1];
     storeNames = util.isIterable(storeNames)
         // Creating new array also ensures sequence is passed by value: https://heycam.github.io/webidl/#idl-sequence
-        ? new Set(// to be unique
+        ? __spreadArray([], new Set(// to be unique
         util.convertToSequenceDOMString(storeNames) // iterables have `ToString` applied (and we convert to array for convenience)
-        ).slice().sort() // must be sorted
+        ), true).sort() // must be sorted
         : [util.convertToDOMString(storeNames)];
     /* (function () {
         throw new TypeError('You must supply a valid `storeNames` to `IDBDatabase.transaction`');
@@ -175,17 +184,17 @@ IDBDatabase.prototype.transaction = function (storeNames /* , mode */) {
     mode = mode || 'readonly';
     IDBTransaction_1.default.__assertNotVersionChange(this.__versionTransaction);
     if (this.__closed) {
-        throw DOMException_1.createDOMException('InvalidStateError', 'An attempt was made to start a new transaction on a database connection that is not open');
+        throw (0, DOMException_1.createDOMException)('InvalidStateError', 'An attempt was made to start a new transaction on a database connection that is not open');
     }
     var objectStoreNames = DOMStringList_1.default.__createInstance();
     storeNames.forEach(function (storeName) {
         if (!_this.objectStoreNames.contains(storeName)) {
-            throw DOMException_1.createDOMException('NotFoundError', 'The "' + storeName + '" object store does not exist');
+            throw (0, DOMException_1.createDOMException)('NotFoundError', 'The "' + storeName + '" object store does not exist');
         }
         objectStoreNames.push(storeName);
     });
     if (storeNames.length === 0) {
-        throw DOMException_1.createDOMException('InvalidAccessError', 'No valid object store names were specified');
+        throw (0, DOMException_1.createDOMException)('InvalidAccessError', 'No valid object store names were specified');
     }
     if (mode !== 'readonly' && mode !== 'readwrite') {
         throw new TypeError('Invalid transaction mode: ' + mode);
@@ -198,7 +207,7 @@ IDBDatabase.prototype.transaction = function (storeNames /* , mode */) {
 // See https://github.com/w3c/IndexedDB/issues/192
 IDBDatabase.prototype.throwIfUpgradeTransactionNull = function () {
     if (this.__upgradeTransaction === null) {
-        throw DOMException_1.createDOMException('InvalidStateError', 'No upgrade transaction associated with database.');
+        throw (0, DOMException_1.createDOMException)('InvalidStateError', 'No upgrade transaction associated with database.');
     }
 };
 // Todo __forceClose: Add tests for `__forceClose`
@@ -211,13 +220,13 @@ IDBDatabase.prototype.__forceClose = function (msg) {
             ct++;
             if (ct === me.__transactions.length) {
                 // Todo __forceClose: unblock any pending `upgradeneeded` or `deleteDatabase` calls
-                var evt_1 = Event_1.createEvent('close');
+                var evt_1 = (0, Event_1.createEvent)('close');
                 setTimeout(function () {
                     me.dispatchEvent(evt_1);
                 });
             }
         };
-        trans.__abortTransaction(DOMException_1.createDOMException('AbortError', 'The connection was force-closed: ' + (msg || '')));
+        trans.__abortTransaction((0, DOMException_1.createDOMException)('AbortError', 'The connection was force-closed: ' + (msg || '')));
     });
 };
 util.defineOuterInterface(IDBDatabase.prototype, listeners);
